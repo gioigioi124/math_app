@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
 
 // Mock data for all lessons organized by category
 const lessonCategories = [
@@ -151,8 +152,7 @@ export default function LessonsScreen() {
 
   const handleLessonPress = (lesson: any) => {
     if (lesson.unlocked) {
-      // TODO: Navigate to lesson detail
-      console.log("Navigate to lesson:", lesson.id);
+      router.push(`/lesson-detail?lessonId=${lesson.id}`);
     }
   };
 
