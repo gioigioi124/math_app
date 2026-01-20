@@ -88,9 +88,8 @@ export default function GradeSelectionScreen() {
     if (selectedGrade) {
       try {
         await AsyncStorage.setItem("selectedGrade", selectedGrade.toString());
-        await AsyncStorage.setItem("hasCompletedOnboarding", "true");
-        // Navigate to main app
-        router.replace("/(tabs)");
+        // Navigate to signup screen
+        router.push("/signup");
       } catch (error) {
         console.error("Error saving grade:", error);
       }

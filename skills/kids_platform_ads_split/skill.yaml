@@ -1,0 +1,9 @@
+name: kids_platform_ads_split
+description: >
+  Tách logic quảng cáo Android / iOS cho app trẻ em.
+  Android bật ads an toàn, iOS tắt hoàn toàn để tránh reject.
+apply_to:
+  - react-native
+  - mern
+ruleset: strict
+platform_aware: true

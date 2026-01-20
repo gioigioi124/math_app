@@ -1,0 +1,4 @@
+- Component KHÔNG biết lớp mấy
+- Component nhận data qua props
+- Không fetch API trong component
+- Screen chịu trách nhiệm data

@@ -1,0 +1,7 @@
+- App không yêu cầu login
+- Tạo guest user khi mở app lần đầu
+- Guest có thể:
+  - Chọn lớp
+  - Học bài
+  - Lưu tiến độ
+- Guest có thể nâng cấp thành user sau
