@@ -140,12 +140,20 @@ export default function HomeScreen() {
                 </Text>
               </View>
             </View>
-            <TouchableOpacity
-              onPress={handleSettings}
-              className="w-10 h-10 bg-white/20 rounded-full items-center justify-center"
-            >
-              <Feather name="settings" size={20} color="white" />
-            </TouchableOpacity>
+            <View className="flex-row gap-2">
+              <TouchableOpacity
+                onPress={() => router.push("/celebration")}
+                className="w-10 h-10 bg-pink-500 rounded-full items-center justify-center"
+              >
+                <Text className="text-lg">🎉</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleSettings}
+                className="w-10 h-10 bg-white/20 rounded-full items-center justify-center"
+              >
+                <Feather name="settings" size={20} color="white" />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
