@@ -32,13 +32,13 @@ Building a mobile math learning app for elementary students with:
 - [x] UserProvider (guest-first, upgrade to user)
 - [x] ProgressProvider (local progress tracking)
 
-### Phase 1D: Di chuyển Screens
+### Phase 1D: Di chuyển Screens ✅
 
-- [ ] `grade-selection.tsx` → `screens/GradeSelectScreen`
-- [ ] `(tabs)/index.tsx` → `screens/HomeScreen`
-- [ ] `(tabs)/lessons.tsx` → `screens/LessonListScreen`
-- [ ] `lesson-detail.tsx` → `screens/LessonDetailScreen`
-- [ ] `celebration.tsx` → `screens/LessonCompleteScreen`
+- [x] `grade-selection.tsx` → `screens/GradeSelectScreen`
+- [x] `(tabs)/index.tsx` → `screens/HomeScreen`
+- [x] `(tabs)/lessons.tsx` → `screens/LessonListScreen`
+- [x] `lesson-detail.tsx` → `screens/LessonDetailScreen`
+- [x] `celebration.tsx` → `screens/LessonCompleteScreen`
 
 ### Phase 2A: Backend User Model ✅
 
