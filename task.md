@@ -1,98 +1,109 @@
-# 📱 Math App UI Implementation - Task Tracking
+# 📱 Math App - Task Tracking
 
 ## Overview
 
 Building a mobile math learning app for elementary students with:
 
 - Child-friendly UI (large fonts, icons, minimal text)
+- Guest-first: không yêu cầu login
 - Local progress before backend integration
-- No login required for basic usage
 
 ---
 
-## Phase 1: Navigation & Home Screen ✅
+## 🔧 Code Reorganization (kids_learning_app_core skill)
 
-- [x] Update tab layout with 4 tabs (Home, Lessons, Badges, Profile)
-- [x] Create Home screen with:
-  - [x] Header (avatar, name, star count)
-  - [x] Today's lessons section
-  - [x] Weekly progress bar
-  - [x] Achievement stats cards
+### Phase 1A: Folder Structure ✅
 
----
+- [x] Tạo `mobile/src/screens/`
+- [x] Tạo `mobile/src/components/`
+- [x] Tạo `mobile/src/modules/` (shop, profile, leaderboard)
+- [x] Tạo `mobile/src/providers/`
+- [x] Tạo `mobile/src/services/`
 
-## Phase 2: Lesson System
+### Phase 1B: Components ✅
 
-- [x] Create mock data structure for lessons
-- [x] Build Lessons List screen with:
-  - [x] Category sections (Numbers, Geometry, etc.)
-  - [x] Lesson cards with status indicators
-  - [x] Star rating display
-- [ ] Build Lesson Detail screen with:
-  - [ ] Lesson info and icon
-  - [ ] Activity options (Learn, Quiz, Game)
-  - [ ] Start button
+- [x] PrimaryButton (variants: primary, secondary, outline)
+- [x] ProgressBar (configurable color/height)
+- [x] LessonCard (icon, progress, lock state)
+- [x] LessonGroup (group header + cards)
 
----
+### Phase 1C: Providers ✅
 
-## Phase 3: Progress & Storage
+- [x] UserProvider (guest-first, upgrade to user)
+- [x] ProgressProvider (local progress tracking)
 
-- [ ] Implement local progress storage with AsyncStorage
-  - [ ] Save completed lessons
-  - [ ] Track star count
-  - [ ] Track streak days
-- [ ] Create progress context/hook for app-wide access
+### Phase 1D: Di chuyển Screens
 
----
+- [ ] `grade-selection.tsx` → `screens/GradeSelectScreen`
+- [ ] `(tabs)/index.tsx` → `screens/HomeScreen`
+- [ ] `(tabs)/lessons.tsx` → `screens/LessonListScreen`
+- [ ] `lesson-detail.tsx` → `screens/LessonDetailScreen`
+- [ ] `celebration.tsx` → `screens/LessonCompleteScreen`
 
-## Phase 4: Celebration & Rewards
+### Phase 2A: Backend User Model ✅
 
-- [ ] Create Celebration screen with:
-  - [ ] Confetti animation
-  - [ ] Star reward display
-  - [ ] Navigation buttons
-- [x] Build Star Shop screen (in Badges tab)
-  - [x] Avatar items
-  - [x] Badge items
+- [x] Thêm type: guest | user
+- [x] Thêm grade, deviceId
+- [x] Optional password cho guest
+
+### Phase 2B: Guest API ✅
+
+- [x] POST /api/guest - tạo guest user
+- [x] POST /api/guest/upgrade - nâng cấp guest → user
+- [x] GET /api/guest/:deviceId - lấy guest user
 
 ---
 
-## Phase 5: Profile & Social
+## 📱 UI Implementation
 
-- [x] Build Profile screen with:
-  - [x] User stats display
-  - [x] Settings link
-  - [x] Login prompt
-- [ ] Create Leaderboard screen with:
-  - [ ] Top 3 podium
-  - [ ] Ranked list
-  - [ ] User's rank highlight
+### Phase 1: Navigation & Home ✅
 
----
+- [x] Tab layout với 4 tabs (Home, Lessons, Badges, Profile)
+- [x] Home screen (avatar, today lessons, weekly progress, stats)
 
-## Phase 6: Authentication UI
+### Phase 2: Lesson System
 
-- [ ] Build Login screen
-  - [ ] Email/password form
-  - [ ] Social login buttons
-  - [ ] Register link
-- [ ] Build Register screen
-  - [ ] Registration form
-  - [ ] Login link
+- [x] Mock data structure cho lessons
+- [x] Lessons List screen (categories, cards, stars)
+- [ ] Lesson Detail screen (info, activities, start button)
 
----
+### Phase 3: Progress & Storage
 
-## Phase 7: Backend Integration (Future)
+- [ ] Local progress với AsyncStorage
+- [x] Progress context/hook (đã tạo ProgressProvider)
+
+### Phase 4: Celebration & Rewards
+
+- [ ] Celebration screen (confetti, stars, navigation)
+- [x] Star Shop screen (avatars, badges)
+
+### Phase 5: Profile & Social
+
+- [x] Profile screen (stats, settings, login prompt)
+- [ ] Leaderboard screen (podium, ranked list)
+
+### Phase 6: Authentication UI
+
+- [ ] Login screen
+- [ ] Register screen
+
+### Phase 7: Backend Integration
 
 - [ ] Connect auth to backend
 - [ ] Sync progress to server
 - [ ] Load leaderboard from API
-- [ ] Online shop functionality
 
 ---
 
 ## 📊 Current Status
 
-**Phase**: 1 Complete, Starting Phase 2
-**Progress**: ~40%
-**Last Updated**: 2026-01-17
+**Progress**: ~55%
+**Last Updated**: 2026-01-20
+
+| Component                 | Status     |
+| ------------------------- | ---------- |
+| Frontend folder structure | ✅ Done    |
+| Reusable components       | ✅ Done    |
+| Providers                 | ✅ Done    |
+| Backend guest support     | ✅ Done    |
+| Screen migration          | ⏳ Pending |

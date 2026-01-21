@@ -1,0 +1,10 @@
+name: kids_learning_app_core
+description: >
+  Core architecture cho app học tập trẻ em:
+  guest-first, reusable UI, mở rộng shop,
+  profile, leaderboard mà không phá cấu trúc.
+apply_to:
+  - react-native
+  - mern
+ruleset: strict
+guest_first: true

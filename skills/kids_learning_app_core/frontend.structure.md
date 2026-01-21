@@ -25,3 +25,7 @@ src/
 └── services/
 ├── lessonService
 ├── userService
+
+👉 screens = flow
+👉 components = tái sử dụng
+👉 modules = mở rộng

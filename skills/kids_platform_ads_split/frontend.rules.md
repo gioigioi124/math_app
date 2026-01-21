@@ -1,0 +1,5 @@
+- Không render Ads component trực tiếp trong screen
+- Ads phải đi qua 1 abstraction layer
+- Quyết định hiển thị ads bằng Platform.OS
+- Không import SDK ads trong iOS build
+- Không ads trong màn hình học/bài tập
