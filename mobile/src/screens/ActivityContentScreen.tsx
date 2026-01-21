@@ -36,6 +36,7 @@ export default function ActivityContentScreen() {
         useNativeDriver: true,
       }),
     ]).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!activity) {
@@ -48,8 +49,12 @@ export default function ActivityContentScreen() {
 
   const handleStartActivity = () => {
     // TODO: Navigate to actual activity implementation
-    // For now, simulate completion and go to celebration screen
-    router.push(`/celebration?lessonId=${lessonId}&activityId=${activityId}`);
+    // For now, simulate completion and go to celebration screen with random high results
+    const mockScore = Math.floor(Math.random() * 21) + 80; // 80-100
+    const mockAccuracy = Math.floor(Math.random() * 11) + 90; // 90-100
+    router.push(
+      `/celebration?lessonId=${lessonId}&activityId=${activityId}&score=${mockScore}&accuracy=${mockAccuracy}`,
+    );
   };
 
   return (
