@@ -4,134 +4,295 @@ import React, {
   useState,
   useEffect,
   ReactNode,
+  useCallback,
 } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useUser } from "./UserProvider";
-
-// Types
-export interface LessonProgress {
-  lessonId: string;
-  completed: boolean;
-  score: number;
-  attempts: number;
-  bestScore: number;
-  completedAt?: string;
-}
+import { LessonProgress, ActivityProgress } from "../types/lesson.types";
+import {
+  saveLessonProgress,
+  getAllLessonProgress,
+  saveActivityProgress,
+  getLessonActivitiesProgress,
+  getUserStats,
+  calculateUserStats,
+  updateUserStats,
+  UserStats,
+} from "../services/progress.service";
 
 interface ProgressContextType {
-  progressMap: Map<string, LessonProgress>;
-  loading: boolean;
-  getProgressForLesson: (lessonId: string) => LessonProgress | undefined;
-  updateProgress: (
+  // Lesson Progress
+  lessonProgressMap: Map<string, LessonProgress>;
+  getLessonProgressById: (lessonId: string) => LessonProgress | undefined;
+  updateLessonProgress: (
     lessonId: string,
-    score: number,
-    completed: boolean,
+    progress: number,
+    completed: number,
+    lastActivityId?: string,
   ) => Promise<void>;
-  getTotalCompleted: () => number;
-  getTotalScore: () => number;
+
+  // Activity Progress
+  activityProgressMap: Map<string, ActivityProgress>;
+  getActivityProgressById: (
+    lessonId: string,
+    activityId: string,
+  ) => ActivityProgress | undefined;
+  updateActivityProgress: (
+    lessonId: string,
+    activityId: string,
+    status: ActivityProgress["status"],
+    score?: number,
+    accuracy?: number,
+  ) => Promise<void>;
+
+  // User Stats
+  userStats: UserStats | null;
+  refreshStats: () => Promise<void>;
+
+  // Loading
+  loading: boolean;
+
+  // Utilities
+  getTotalLessonsCompleted: () => number;
+  getTotalActivitiesCompleted: () => number;
+  getAverageScore: () => number;
 }
 
 const ProgressContext = createContext<ProgressContextType | undefined>(
   undefined,
 );
 
-const getProgressKey = (userId: string) => `@progress_${userId}`;
-
 export const ProgressProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const { user } = useUser();
-  const [progressMap, setProgressMap] = useState<Map<string, LessonProgress>>(
-    new Map(),
-  );
+  const [lessonProgressMap, setLessonProgressMap] = useState<
+    Map<string, LessonProgress>
+  >(new Map());
+  const [activityProgressMap, setActivityProgressMap] = useState<
+    Map<string, ActivityProgress>
+  >(new Map());
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Load progress when user changes
+  // Load all progress when component mounts or user changes
   useEffect(() => {
-    const loadProgress = async () => {
-      if (!user) {
-        setProgressMap(new Map());
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const savedProgress = await AsyncStorage.getItem(
-          getProgressKey(user.id),
-        );
-        if (savedProgress) {
-          const parsed = JSON.parse(savedProgress);
-          setProgressMap(new Map(Object.entries(parsed)));
-        } else {
-          setProgressMap(new Map());
-        }
-      } catch (error) {
-        console.error("Failed to load progress:", error);
-        setProgressMap(new Map());
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadProgress();
+    loadAllProgress();
   }, [user]);
 
-  const getProgressForLesson = (
-    lessonId: string,
-  ): LessonProgress | undefined => {
-    return progressMap.get(lessonId);
+  const loadAllProgress = async () => {
+    try {
+      setLoading(true);
+
+      // Load all lesson progress
+      const allLessonProgress = await getAllLessonProgress();
+      setLessonProgressMap(new Map(Object.entries(allLessonProgress)));
+
+      // Load user stats
+      const stats = await getUserStats();
+      if (stats) {
+        setUserStats(stats);
+      } else {
+        // Calculate initial stats
+        const calculatedStats = await calculateUserStats();
+        setUserStats(calculatedStats);
+        await updateUserStats(calculatedStats);
+      }
+    } catch (error) {
+      console.error("Failed to load progress:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const updateProgress = async (
+  // ==================== Lesson Progress ====================
+
+  const getLessonProgressById = useCallback(
+    (lessonId: string): LessonProgress | undefined => {
+      return lessonProgressMap.get(lessonId);
+    },
+    [lessonProgressMap],
+  );
+
+  const updateLessonProgress = async (
     lessonId: string,
-    score: number,
-    completed: boolean,
+    progress: number,
+    completed: number,
+    lastActivityId?: string,
   ) => {
-    if (!user) return;
+    try {
+      const newProgress: LessonProgress = {
+        lessonId,
+        progress,
+        completed,
+        lastActivityId,
+        updatedAt: new Date().toISOString(),
+      };
 
-    const existing = progressMap.get(lessonId);
-    const newProgress: LessonProgress = {
-      lessonId,
-      completed: completed || existing?.completed || false,
-      score,
-      attempts: (existing?.attempts || 0) + 1,
-      bestScore: Math.max(score, existing?.bestScore || 0),
-      completedAt: completed ? new Date().toISOString() : existing?.completedAt,
-    };
+      // Save to storage
+      await saveLessonProgress(lessonId, newProgress);
 
-    const newMap = new Map(progressMap);
-    newMap.set(lessonId, newProgress);
-    setProgressMap(newMap);
+      // Update local state
+      const newMap = new Map(lessonProgressMap);
+      newMap.set(lessonId, newProgress);
+      setLessonProgressMap(newMap);
 
-    // Persist to storage
-    const toSave = Object.fromEntries(newMap);
-    await AsyncStorage.setItem(getProgressKey(user.id), JSON.stringify(toSave));
+      // Refresh stats
+      await refreshStats();
+    } catch (error) {
+      console.error("Failed to update lesson progress:", error);
+    }
   };
 
-  const getTotalCompleted = (): number => {
+  // ==================== Activity Progress ====================
+
+  const getActivityProgressById = useCallback(
+    (lessonId: string, activityId: string): ActivityProgress | undefined => {
+      const key = `${lessonId}_${activityId}`;
+      return activityProgressMap.get(key);
+    },
+    [activityProgressMap],
+  );
+
+  const updateActivityProgress = async (
+    lessonId: string,
+    activityId: string,
+    status: ActivityProgress["status"],
+    score?: number,
+    accuracy?: number,
+  ) => {
+    try {
+      const existing = getActivityProgressById(lessonId, activityId);
+
+      const newProgress: ActivityProgress = {
+        activityId,
+        lessonId,
+        status,
+        score,
+        accuracy,
+        completedAt:
+          status === "completed" ? new Date().toISOString() : undefined,
+        attempts: (existing?.attempts || 0) + 1,
+      };
+
+      // Save to storage
+      await saveActivityProgress(lessonId, activityId, newProgress);
+
+      // Update local state
+      const key = `${lessonId}_${activityId}`;
+      const newMap = new Map(activityProgressMap);
+      newMap.set(key, newProgress);
+      setActivityProgressMap(newMap);
+
+      // Update lesson progress based on activities
+      await updateLessonProgressFromActivities(lessonId);
+
+      // Refresh stats
+      await refreshStats();
+    } catch (error) {
+      console.error("Failed to update activity progress:", error);
+    }
+  };
+
+  const updateLessonProgressFromActivities = async (lessonId: string) => {
+    try {
+      // Get all activities for this lesson
+      const activities = await getLessonActivitiesProgress(lessonId);
+      const activityList = Object.values(activities);
+
+      if (activityList.length === 0) return;
+
+      // Calculate completed count
+      const completedCount = activityList.filter(
+        (a) => a.status === "completed",
+      ).length;
+
+      // Calculate progress percentage
+      const totalActivities = activityList.length;
+      const progress = Math.round((completedCount / totalActivities) * 100);
+
+      // Find last activity
+      const lastActivity = activityList.reduce((latest, current) => {
+        if (!latest) return current;
+        const latestDate = latest.completedAt || "";
+        const currentDate = current.completedAt || "";
+        return currentDate > latestDate ? current : latest;
+      }, activityList[0]);
+
+      // Update lesson progress
+      await updateLessonProgress(
+        lessonId,
+        progress,
+        completedCount,
+        lastActivity.activityId,
+      );
+    } catch (error) {
+      console.error("Failed to update lesson progress from activities:", error);
+    }
+  };
+
+  // ==================== User Stats ====================
+
+  const refreshStats = async () => {
+    try {
+      const calculatedStats = await calculateUserStats();
+      setUserStats(calculatedStats);
+      await updateUserStats(calculatedStats);
+    } catch (error) {
+      console.error("Failed to refresh stats:", error);
+    }
+  };
+
+  // ==================== Utilities ====================
+
+  const getTotalLessonsCompleted = useCallback((): number => {
     let count = 0;
-    progressMap.forEach((p) => {
-      if (p.completed) count++;
+    lessonProgressMap.forEach((progress) => {
+      if (progress.progress === 100) {
+        count++;
+      }
     });
     return count;
-  };
+  }, [lessonProgressMap]);
 
-  const getTotalScore = (): number => {
-    let total = 0;
-    progressMap.forEach((p) => {
-      total += p.bestScore;
+  const getTotalActivitiesCompleted = useCallback((): number => {
+    let count = 0;
+    activityProgressMap.forEach((progress) => {
+      if (progress.status === "completed") {
+        count++;
+      }
     });
-    return total;
-  };
+    return count;
+  }, [activityProgressMap]);
+
+  const getAverageScore = useCallback((): number => {
+    let totalScore = 0;
+    let count = 0;
+
+    activityProgressMap.forEach((progress) => {
+      if (progress.score !== undefined) {
+        totalScore += progress.score;
+        count++;
+      }
+    });
+
+    return count > 0 ? Math.round(totalScore / count) : 0;
+  }, [activityProgressMap]);
 
   return (
     <ProgressContext.Provider
       value={{
-        progressMap,
+        lessonProgressMap,
+        getLessonProgressById,
+        updateLessonProgress,
+        activityProgressMap,
+        getActivityProgressById,
+        updateActivityProgress,
+        userStats,
+        refreshStats,
         loading,
-        getProgressForLesson,
-        updateProgress,
-        getTotalCompleted,
-        getTotalScore,
+        getTotalLessonsCompleted,
+        getTotalActivitiesCompleted,
+        getAverageScore,
       }}
     >
       {children}

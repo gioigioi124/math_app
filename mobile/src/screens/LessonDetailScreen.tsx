@@ -8,23 +8,21 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, router } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getLessonById } from "../data/lessons.data";
 import { Activity } from "../types/lesson.types";
+import { useLessonProgress } from "../hooks/useProgressHooks";
 
 export default function LessonDetailScreen() {
   const params = useLocalSearchParams();
   const lessonId = params.lessonId as string;
 
-  const [progress, setProgress] = useState(0);
-  const [completedActivities, setCompletedActivities] = useState(0);
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(50));
 
   const lessonData = getLessonById(lessonId);
+  const { progressPercent, completedActivities } = useLessonProgress(lessonId);
 
   useEffect(() => {
-    loadProgress();
     // Animate on mount
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -40,30 +38,6 @@ export default function LessonDetailScreen() {
     ]).start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lessonId]);
-
-  const loadProgress = async () => {
-    if (!lessonData) return;
-
-    try {
-      const savedProgress = await AsyncStorage.getItem(
-        `lesson_progress_${lessonId}`,
-      );
-      if (savedProgress) {
-        const data = JSON.parse(savedProgress);
-        setProgress(data.progress || 0);
-        setCompletedActivities(data.completed || 0);
-      } else {
-        // Calculate from activity status
-        const completed = lessonData.activities.filter(
-          (a) => a.status === "completed",
-        ).length;
-        setCompletedActivities(completed);
-        setProgress(Math.round((completed / lessonData.totalActivities) * 100));
-      }
-    } catch (error) {
-      console.error("Error loading progress:", error);
-    }
-  };
 
   const handleActivityPress = (activity: Activity) => {
     if (activity.status !== "locked") {
@@ -90,11 +64,11 @@ export default function LessonDetailScreen() {
   }
 
   const getProgressMessage = () => {
-    if (progress >= 80) {
+    if (progressPercent >= 80) {
       return "Gần hoàn thành rồi! Cố lên nhé! 🚀";
-    } else if (progress >= 40) {
+    } else if (progressPercent >= 40) {
       return "Tiến bộ tuyệt vời! Bạn làm rất tốt! 🌟";
-    } else if (progress > 0) {
+    } else if (progressPercent > 0) {
       return "Khởi đầu tốt lắm! Tiếp tục nào! 💪";
     } else {
       return "Hãy bắt đầu cuộc phiêu lưu thú vị này! 🎯";
@@ -171,7 +145,7 @@ export default function LessonDetailScreen() {
             <View className="bg-white rounded-full h-3 overflow-hidden mb-2">
               <Animated.View
                 className="bg-pink-400 h-full rounded-full"
-                style={{ width: `${progress}%` }}
+                style={{ width: `${progressPercent}%` }}
               />
             </View>
 

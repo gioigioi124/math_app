@@ -6,6 +6,8 @@ import {
   Lexend_700Bold,
 } from "@expo-google-fonts/lexend";
 import { View, ActivityIndicator } from "react-native";
+import { UserProvider } from "../src/providers/UserProvider";
+import { ProgressProvider } from "../src/providers/ProgressProvider";
 import "../global.css";
 
 export default function RootLayout() {
@@ -24,10 +26,14 @@ export default function RootLayout() {
   }
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-      }}
-    />
+    <UserProvider>
+      <ProgressProvider>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+          }}
+        />
+      </ProgressProvider>
+    </UserProvider>
   );
 }
