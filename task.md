@@ -61,15 +61,26 @@ Building a mobile math learning app for elementary students with:
 - [x] Tab layout với 4 tabs (Home, Lessons, Badges, Profile)
 - [x] Home screen (avatar, today lessons, weekly progress, stats)
 
-### Phase 2: Lesson System
+### Phase 2: Lesson System ✅
 
-- [x] Mock data structure cho lessons
+- [x] Mock data structure cho lessons (centralized in `src/data/lessons.data.ts`)
+- [x] TypeScript types cho lessons & activities
 - [x] Lessons List screen (categories, cards, stars)
-- [ ] Lesson Detail screen (info, activities, start button)
+- [x] Lesson Detail screen (info, activities, start button, animations)
+- [x] Activity Content screen (interactive quiz với animations)
+
+**Improvements Made:**
+
+- ✨ Tách mock data ra file riêng với TypeScript types đầy đủ
+- ✨ Đồng bộ dữ liệu giữa LessonList và LessonDetail
+- ✨ Thêm animations (fade, slide, scale) cho better UX
+- ✨ Hiển thị thông tin chi tiết: description, estimated time, scores
+- ✨ Vietnamese translations cho tất cả UI text
+- ✨ Activity Content screen với preview và previous scores
 
 ### Phase 3: Progress & Storage
 
-- [ ] Local progress với AsyncStorage
+- [ ] Local progress với AsyncStorage (partial - cần integrate với new data structure)
 - [x] Progress context/hook (đã tạo ProgressProvider)
 
 ### Phase 4: Celebration & Rewards
@@ -97,13 +108,16 @@ Building a mobile math learning app for elementary students with:
 
 ## 📊 Current Status
 
-**Progress**: ~55%
-**Last Updated**: 2026-01-20
+**Progress**: ~65%
+**Last Updated**: 2026-01-21
 
-| Component                 | Status     |
-| ------------------------- | ---------- |
-| Frontend folder structure | ✅ Done    |
-| Reusable components       | ✅ Done    |
-| Providers                 | ✅ Done    |
-| Backend guest support     | ✅ Done    |
-| Screen migration          | ⏳ Pending |
+| Component                 | Status  |
+| ------------------------- | ------- |
+| Frontend folder structure | ✅ Done |
+| Reusable components       | ✅ Done |
+| Providers                 | ✅ Done |
+| Backend guest support     | ✅ Done |
+| Screen migration          | ✅ Done |
+| Lesson System (Phase 2)   | ✅ Done |
+| TypeScript types          | ✅ Done |
+| Centralized mock data     | ✅ Done |

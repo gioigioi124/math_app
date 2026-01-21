@@ -1,278 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Animated,
+} from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-// Lesson content data structure
-const lessonContents: any = {
-  "1-10": {
-    title: "Lesson 1: Numbers 1-10",
-    grade: "MATH GRADE 1",
-    totalActivities: 5,
-    activities: [
-      {
-        id: "intro-1-5",
-        title: "Introduction to 1-5",
-        status: "completed",
-        icon: "✓",
-        iconBg: "#10B981",
-        color: "#D1FAE5",
-      },
-      {
-        id: "counting-practice",
-        title: "Counting Practice",
-        status: "in-progress",
-        icon: "📝",
-        iconBg: "#EC4899",
-        color: "#FCE7F3",
-      },
-      {
-        id: "intro-6-10",
-        title: "Introduction to 6-10",
-        status: "locked",
-        icon: "🔒",
-        iconBg: "#9CA3AF",
-        color: "#F3F4F6",
-      },
-      {
-        id: "basic-addition",
-        title: "Basic Addition",
-        status: "locked",
-        icon: "🔒",
-        iconBg: "#9CA3AF",
-        color: "#F3F4F6",
-      },
-      {
-        id: "final-quiz",
-        title: "Final Review Quiz",
-        status: "locked",
-        icon: "❓",
-        iconBg: "#9CA3AF",
-        color: "#F3F4F6",
-      },
-    ],
-  },
-  "1-11": {
-    title: "Lesson 2: Numbers 10-20",
-    grade: "MATH GRADE 1",
-    totalActivities: 5,
-    activities: [
-      {
-        id: "intro-10-15",
-        title: "Introduction to 10-15",
-        status: "completed",
-        icon: "✓",
-        iconBg: "#10B981",
-        color: "#D1FAE5",
-      },
-      {
-        id: "counting-teens",
-        title: "Counting Teens",
-        status: "in-progress",
-        icon: "📝",
-        iconBg: "#EC4899",
-        color: "#FCE7F3",
-      },
-      {
-        id: "intro-16-20",
-        title: "Introduction to 16-20",
-        status: "locked",
-        icon: "🔒",
-        iconBg: "#9CA3AF",
-        color: "#F3F4F6",
-      },
-      {
-        id: "place-value",
-        title: "Place Value Basics",
-        status: "locked",
-        icon: "🔒",
-        iconBg: "#9CA3AF",
-        color: "#F3F4F6",
-      },
-      {
-        id: "final-quiz",
-        title: "Final Review Quiz",
-        status: "locked",
-        icon: "❓",
-        iconBg: "#9CA3AF",
-        color: "#F3F4F6",
-      },
-    ],
-  },
-  "1-12": {
-    title: "Lesson 3: Comparing Numbers",
-    grade: "MATH GRADE 1",
-    totalActivities: 4,
-    activities: [
-      {
-        id: "greater-less",
-        title: "Greater Than & Less Than",
-        status: "not-started",
-        icon: "⚖️",
-        iconBg: "#EC4899",
-        color: "#FCE7F3",
-      },
-      {
-        id: "equal-numbers",
-        title: "Equal Numbers",
-        status: "locked",
-        icon: "🔒",
-        iconBg: "#9CA3AF",
-        color: "#F3F4F6",
-      },
-      {
-        id: "ordering-practice",
-        title: "Ordering Practice",
-        status: "locked",
-        icon: "🔒",
-        iconBg: "#9CA3AF",
-        color: "#F3F4F6",
-      },
-      {
-        id: "final-quiz",
-        title: "Final Review Quiz",
-        status: "locked",
-        icon: "❓",
-        iconBg: "#9CA3AF",
-        color: "#F3F4F6",
-      },
-    ],
-  },
-  "1-20": {
-    title: "Lesson 4: Simple Addition",
-    grade: "MATH GRADE 1",
-    totalActivities: 5,
-    activities: [
-      {
-        id: "intro-addition",
-        title: "What is Addition?",
-        status: "in-progress",
-        icon: "➕",
-        iconBg: "#EC4899",
-        color: "#FEE2E2",
-      },
-      {
-        id: "adding-1-2",
-        title: "Adding 1 and 2",
-        status: "locked",
-        icon: "🔒",
-        iconBg: "#9CA3AF",
-        color: "#F3F4F6",
-      },
-      {
-        id: "adding-objects",
-        title: "Adding Objects",
-        status: "locked",
-        icon: "🔒",
-        iconBg: "#9CA3AF",
-        color: "#F3F4F6",
-      },
-      {
-        id: "word-problems",
-        title: "Word Problems",
-        status: "locked",
-        icon: "🔒",
-        iconBg: "#9CA3AF",
-        color: "#F3F4F6",
-      },
-      {
-        id: "final-quiz",
-        title: "Final Review Quiz",
-        status: "locked",
-        icon: "❓",
-        iconBg: "#9CA3AF",
-        color: "#F3F4F6",
-      },
-    ],
-  },
-  "1-21": {
-    title: "Lesson 5: Addition Within 10",
-    grade: "MATH GRADE 1",
-    totalActivities: 5,
-    activities: [
-      {
-        id: "number-bonds",
-        title: "Number Bonds",
-        status: "not-started",
-        icon: "🧮",
-        iconBg: "#EC4899",
-        color: "#D1FAE5",
-      },
-      {
-        id: "making-10",
-        title: "Making 10",
-        status: "locked",
-        icon: "🔒",
-        iconBg: "#9CA3AF",
-        color: "#F3F4F6",
-      },
-      {
-        id: "fact-families",
-        title: "Fact Families",
-        status: "locked",
-        icon: "🔒",
-        iconBg: "#9CA3AF",
-        color: "#F3F4F6",
-      },
-      {
-        id: "speed-practice",
-        title: "Speed Practice",
-        status: "locked",
-        icon: "🔒",
-        iconBg: "#9CA3AF",
-        color: "#F3F4F6",
-      },
-      {
-        id: "final-quiz",
-        title: "Final Review Quiz",
-        status: "locked",
-        icon: "❓",
-        iconBg: "#9CA3AF",
-        color: "#F3F4F6",
-      },
-    ],
-  },
-  "1-40": {
-    title: "Lesson 6: Shape Hunter",
-    grade: "MATH GRADE 1",
-    totalActivities: 4,
-    activities: [
-      {
-        id: "basic-shapes",
-        title: "Basic Shapes",
-        status: "in-progress",
-        icon: "🔺",
-        iconBg: "#EC4899",
-        color: "#DBEAFE",
-      },
-      {
-        id: "shape-sorting",
-        title: "Shape Sorting",
-        status: "locked",
-        icon: "🔒",
-        iconBg: "#9CA3AF",
-        color: "#F3F4F6",
-      },
-      {
-        id: "shape-hunt",
-        title: "Shape Hunt Game",
-        status: "locked",
-        icon: "🔒",
-        iconBg: "#9CA3AF",
-        color: "#F3F4F6",
-      },
-      {
-        id: "final-quiz",
-        title: "Final Review Quiz",
-        status: "locked",
-        icon: "❓",
-        iconBg: "#9CA3AF",
-        color: "#F3F4F6",
-      },
-    ],
-  },
-};
+import { getLessonById } from "../data/lessons.data";
+import { Activity } from "../types/lesson.types";
 
 export default function LessonDetailScreen() {
   const params = useLocalSearchParams();
@@ -280,15 +18,32 @@ export default function LessonDetailScreen() {
 
   const [progress, setProgress] = useState(0);
   const [completedActivities, setCompletedActivities] = useState(0);
+  const [fadeAnim] = useState(new Animated.Value(0));
+  const [slideAnim] = useState(new Animated.Value(50));
 
-  const lessonData = lessonContents[lessonId] || lessonContents["1-10"];
+  const lessonData = getLessonById(lessonId);
 
   useEffect(() => {
     loadProgress();
+    // Animate on mount
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ]).start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lessonId]);
 
   const loadProgress = async () => {
+    if (!lessonData) return;
+
     try {
       const savedProgress = await AsyncStorage.getItem(
         `lesson_progress_${lessonId}`,
@@ -300,7 +55,7 @@ export default function LessonDetailScreen() {
       } else {
         // Calculate from activity status
         const completed = lessonData.activities.filter(
-          (a: any) => a.status === "completed",
+          (a) => a.status === "completed",
         ).length;
         setCompletedActivities(completed);
         setProgress(Math.round((completed / lessonData.totalActivities) * 100));
@@ -310,7 +65,7 @@ export default function LessonDetailScreen() {
     }
   };
 
-  const handleActivityPress = (activity: any) => {
+  const handleActivityPress = (activity: Activity) => {
     if (activity.status !== "locked") {
       router.push(
         `/activity-content?activityId=${activity.id}&lessonId=${lessonId}`,
@@ -318,10 +73,31 @@ export default function LessonDetailScreen() {
     }
   };
 
-  const handleRetryActivity = (activity: any) => {
+  const handleRetryActivity = (activity: Activity) => {
     if (activity.status === "completed") {
-      console.log("Retry activity:", activity.id);
-      // TODO: Navigate to activity with retry mode
+      router.push(
+        `/activity-content?activityId=${activity.id}&lessonId=${lessonId}&retry=true`,
+      );
+    }
+  };
+
+  if (!lessonData) {
+    return (
+      <View className="flex-1 bg-gray-50 items-center justify-center">
+        <Text className="text-gray-500 text-lg">Không tìm thấy bài học</Text>
+      </View>
+    );
+  }
+
+  const getProgressMessage = () => {
+    if (progress >= 80) {
+      return "Gần hoàn thành rồi! Cố lên nhé! 🚀";
+    } else if (progress >= 40) {
+      return "Tiến bộ tuyệt vời! Bạn làm rất tốt! 🌟";
+    } else if (progress > 0) {
+      return "Khởi đầu tốt lắm! Tiếp tục nào! 💪";
+    } else {
+      return "Hãy bắt đầu cuộc phiêu lưu thú vị này! 🎯";
     }
   };
 
@@ -348,6 +124,11 @@ export default function LessonDetailScreen() {
         <Text className="text-xl font-bold text-gray-900 text-center">
           {lessonData.title}
         </Text>
+        {lessonData.description && (
+          <Text className="text-sm text-gray-500 text-center mt-1">
+            {lessonData.description}
+          </Text>
+        )}
       </View>
 
       <ScrollView
@@ -355,7 +136,13 @@ export default function LessonDetailScreen() {
         contentContainerStyle={{ paddingBottom: 24 }}
       >
         {/* Progress Card */}
-        <View className="mx-4 mt-4 mb-3">
+        <Animated.View
+          style={{
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          }}
+          className="mx-4 mt-4 mb-3"
+        >
           <View
             className="bg-pink-50 rounded-3xl p-5"
             style={{
@@ -372,126 +159,188 @@ export default function LessonDetailScreen() {
                   <Feather name="star" size={20} color="#FFF" />
                 </View>
                 <Text className="text-gray-900 text-lg font-bold">
-                  Your Progress
+                  Tiến độ của bạn
                 </Text>
               </View>
               <Text className="text-pink-500 text-lg font-bold">
-                {completedActivities} of {lessonData.totalActivities}
+                {completedActivities} / {lessonData.totalActivities}
               </Text>
             </View>
 
             {/* Progress Bar */}
             <View className="bg-white rounded-full h-3 overflow-hidden mb-2">
-              <View
+              <Animated.View
                 className="bg-pink-400 h-full rounded-full"
                 style={{ width: `${progress}%` }}
               />
             </View>
 
             <Text className="text-pink-700 text-sm">
-              {progress >= 80
-                ? "Almost halfway! Keep it up, Explorer! 🚀"
-                : progress >= 40
-                  ? "Great progress! You're doing amazing! 🌟"
-                  : "Let's get started on this adventure! 💪"}
+              {getProgressMessage()}
             </Text>
+
+            {lessonData.estimatedMinutes && (
+              <View className="flex-row items-center mt-2">
+                <Feather name="clock" size={14} color="#BE185D" />
+                <Text className="text-pink-700 text-xs ml-1">
+                  Thời gian ước tính: {lessonData.estimatedMinutes} phút
+                </Text>
+              </View>
+            )}
           </View>
-        </View>
+        </Animated.View>
 
         {/* Activities List */}
         <View className="px-4">
-          {lessonData.activities.map((activity: any, index: number) => (
-            <TouchableOpacity
+          {lessonData.activities.map((activity, index) => (
+            <Animated.View
               key={activity.id}
-              onPress={() => handleActivityPress(activity)}
-              activeOpacity={activity.status === "locked" ? 1 : 0.7}
-              className="mb-3"
+              style={{
+                opacity: fadeAnim,
+                transform: [
+                  {
+                    translateY: slideAnim.interpolate({
+                      inputRange: [0, 50],
+                      outputRange: [0, 50 + index * 10],
+                    }),
+                  },
+                ],
+              }}
             >
-              <View
-                className="bg-white rounded-3xl p-4 flex-row items-center"
-                style={{
-                  backgroundColor:
-                    activity.status === "locked" ? "#F9FAFB" : activity.color,
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: activity.status === "locked" ? 0.02 : 0.05,
-                  shadowRadius: 8,
-                  elevation: activity.status === "locked" ? 1 : 2,
-                }}
+              <TouchableOpacity
+                onPress={() => handleActivityPress(activity)}
+                activeOpacity={activity.status === "locked" ? 1 : 0.7}
+                className="mb-3"
               >
-                {/* Icon */}
                 <View
-                  className="w-14 h-14 rounded-2xl items-center justify-center mr-4"
+                  className="bg-white rounded-3xl p-4 flex-row items-center"
                   style={{
                     backgroundColor:
-                      activity.status === "completed"
-                        ? "#10B981"
-                        : activity.status === "in-progress"
-                          ? "#EC4899"
-                          : "#E5E7EB",
+                      activity.status === "locked" ? "#F9FAFB" : activity.color,
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: activity.status === "locked" ? 0.02 : 0.05,
+                    shadowRadius: 8,
+                    elevation: activity.status === "locked" ? 1 : 2,
                   }}
                 >
+                  {/* Icon */}
+                  <View
+                    className="w-14 h-14 rounded-2xl items-center justify-center mr-4"
+                    style={{
+                      backgroundColor:
+                        activity.status === "completed"
+                          ? "#10B981"
+                          : activity.status === "in-progress"
+                            ? "#EC4899"
+                            : "#E5E7EB",
+                    }}
+                  >
+                    {activity.status === "completed" ? (
+                      <Feather name="check" size={28} color="#FFF" />
+                    ) : activity.status === "locked" ? (
+                      <Feather name="lock" size={24} color="#9CA3AF" />
+                    ) : (
+                      <Text className="text-2xl">{activity.icon}</Text>
+                    )}
+                  </View>
+
+                  {/* Info */}
+                  <View className="flex-1">
+                    <Text
+                      className={`text-base font-bold mb-1 ${
+                        activity.status === "locked"
+                          ? "text-gray-400"
+                          : "text-gray-900"
+                      }`}
+                    >
+                      {activity.title}
+                    </Text>
+                    {activity.description && activity.status !== "locked" && (
+                      <Text className="text-xs text-gray-500 mb-1">
+                        {activity.description}
+                      </Text>
+                    )}
+                    <View className="flex-row items-center">
+                      <Text
+                        className={`text-xs font-semibold uppercase ${
+                          activity.status === "completed"
+                            ? "text-green-600"
+                            : activity.status === "in-progress"
+                              ? "text-pink-600"
+                              : "text-gray-400"
+                        }`}
+                      >
+                        {activity.status === "completed"
+                          ? "HOÀN THÀNH"
+                          : activity.status === "in-progress"
+                            ? "ĐANG HỌC"
+                            : activity.status === "not-started"
+                              ? "BẮT ĐẦU"
+                              : "KHÓA"}
+                      </Text>
+                      {activity.estimatedMinutes &&
+                        activity.status !== "locked" && (
+                          <>
+                            <Text className="text-gray-400 mx-1">•</Text>
+                            <Feather name="clock" size={12} color="#9CA3AF" />
+                            <Text className="text-xs text-gray-500 ml-1">
+                              {activity.estimatedMinutes} phút
+                            </Text>
+                          </>
+                        )}
+                    </View>
+                    {activity.score !== undefined &&
+                      activity.status === "completed" && (
+                        <View className="flex-row items-center mt-1">
+                          <Feather name="award" size={12} color="#10B981" />
+                          <Text className="text-xs text-green-600 ml-1">
+                            Điểm: {activity.score}/100
+                          </Text>
+                          {activity.accuracy !== undefined && (
+                            <>
+                              <Text className="text-gray-400 mx-1">•</Text>
+                              <Text className="text-xs text-green-600">
+                                Độ chính xác: {activity.accuracy}%
+                              </Text>
+                            </>
+                          )}
+                        </View>
+                      )}
+                  </View>
+
+                  {/* Action Button */}
                   {activity.status === "completed" ? (
-                    <Feather name="check" size={28} color="#FFF" />
-                  ) : activity.status === "locked" ? (
-                    <Feather name="lock" size={24} color="#9CA3AF" />
+                    <TouchableOpacity
+                      onPress={() => handleRetryActivity(activity)}
+                      className="w-10 h-10 bg-teal-100 rounded-full items-center justify-center"
+                    >
+                      <Feather name="rotate-cw" size={18} color="#14B8A6" />
+                    </TouchableOpacity>
+                  ) : activity.status === "in-progress" ||
+                    activity.status === "not-started" ? (
+                    <View className="w-12 h-12 bg-pink-500 rounded-full items-center justify-center">
+                      <Feather name="play" size={24} color="#FFF" />
+                    </View>
                   ) : (
-                    <Text className="text-2xl">{activity.icon}</Text>
+                    <View className="w-10 h-10 bg-gray-200 rounded-full items-center justify-center">
+                      <Feather name="lock" size={18} color="#9CA3AF" />
+                    </View>
                   )}
                 </View>
-
-                {/* Info */}
-                <View className="flex-1">
-                  <Text
-                    className={`text-base font-bold mb-1 ${
-                      activity.status === "locked"
-                        ? "text-gray-400"
-                        : "text-gray-900"
-                    }`}
-                  >
-                    {activity.title}
-                  </Text>
-                  <Text
-                    className={`text-xs font-semibold uppercase ${
-                      activity.status === "completed"
-                        ? "text-green-600"
-                        : activity.status === "in-progress"
-                          ? "text-pink-600"
-                          : "text-gray-400"
-                    }`}
-                  >
-                    {activity.status === "completed"
-                      ? "COMPLETED"
-                      : activity.status === "in-progress"
-                        ? "IN PROGRESS"
-                        : "LOCKED"}
-                  </Text>
-                </View>
-
-                {/* Action Button */}
-                {activity.status === "completed" ? (
-                  <TouchableOpacity
-                    onPress={() => handleRetryActivity(activity)}
-                    className="w-10 h-10 bg-teal-100 rounded-full items-center justify-center"
-                  >
-                    <Feather name="rotate-cw" size={18} color="#14B8A6" />
-                  </TouchableOpacity>
-                ) : activity.status === "in-progress" ? (
-                  <View className="w-12 h-12 bg-pink-500 rounded-full items-center justify-center">
-                    <Feather name="play" size={24} color="#FFF" />
-                  </View>
-                ) : (
-                  <View className="w-10 h-10 bg-gray-200 rounded-full items-center justify-center">
-                    <Feather name="lock" size={18} color="#9CA3AF" />
-                  </View>
-                )}
-              </View>
-            </TouchableOpacity>
+              </TouchableOpacity>
+            </Animated.View>
           ))}
         </View>
 
         {/* Master Challenge Card */}
-        <View className="mx-4 mt-3">
+        <Animated.View
+          style={{
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          }}
+          className="mx-4 mt-3"
+        >
           <View
             className="bg-yellow-100 rounded-3xl p-5 flex-row items-center"
             style={{
@@ -504,17 +353,17 @@ export default function LessonDetailScreen() {
           >
             <View className="flex-1 mr-4">
               <Text className="text-gray-900 text-lg font-bold mb-2">
-                Master Challenge!
+                Thử thách cao thủ!
               </Text>
               <Text className="text-yellow-800 text-sm">
-                Finish this lesson to unlock the Golden Badge.
+                Hoàn thành bài học này để mở khóa Huy hiệu Vàng.
               </Text>
             </View>
             <View className="w-16 h-16 bg-yellow-200 rounded-full items-center justify-center">
               <Text className="text-4xl">🏆</Text>
             </View>
           </View>
-        </View>
+        </Animated.View>
       </ScrollView>
     </View>
   );
