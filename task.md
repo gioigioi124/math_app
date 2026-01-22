@@ -146,10 +146,18 @@ Phase 3 mở ra khả năng:
 - ✨ Cửa hàng huy hiệu và nhân vật (avatars) được thiết kế lại premium
 - ✨ Tốc độ tải và hiệu ứng chuyển cảnh được tối ưu hóa
 
-### Phase 6: Authentication UI
+### Phase 6: Authentication UI ✅
 
-- [ ] Login screen
-- [ ] Register screen
+- [x] Login screen (Vietnamese, phone number)
+- [x] Register screen (Vietnamese, phone number)
+
+**Improvements Made:**
+
+- ✨ Chuyển từ email sang số điện thoại cho phù hợp với thị trường Việt Nam
+- ✨ Validation cho số điện thoại Việt Nam (0xxxxxxxxx hoặc +84xxxxxxxxx)
+- ✨ Dịch toàn bộ UI sang tiếng Việt
+- ✨ Di chuyển screens vào `src/screens/` theo cấu trúc dự án
+- ✨ Giữ nguyên thiết kế premium với mascot và animations
 
 ### Phase 7: Backend Integration
 
