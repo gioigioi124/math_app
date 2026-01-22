@@ -161,9 +161,20 @@ Phase 3 mở ra khả năng:
 
 ### Phase 7: Backend Integration
 
-- [ ] Connect auth to backend
-- [ ] Sync progress to server
-- [ ] Load leaderboard from API
+- [x] **Phase 7A**: Connect auth to backend (Login)
+- [x] **Phase 7B**: Connect auth to backend (SignUp)
+- [ ] **Phase 7C**: Sync progress to server
+- [ ] **Phase 7D**: Load leaderboard from API
+
+**Phase 7A & 7B Completed:**
+
+- ✨ Backend API endpoints updated to support phone number authentication
+- ✨ Mobile app integrated with backend for login and registration
+- ✨ Loading states and error handling implemented
+- ✨ User data saved to AsyncStorage after successful auth
+- ✨ Vietnamese error messages and success alerts
+- ✨ Phone number validation for Vietnamese format
+- ✨ Test scripts created for API verification
 
 ---
 

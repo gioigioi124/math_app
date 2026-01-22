@@ -8,46 +8,81 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { apiService } from "../services/api.service";
 
 export default function SignUpScreen() {
   const [childName, setChildName] = useState("");
   const [parentPhone, setParentPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleSignUp = async () => {
     // Validate inputs
     if (!childName.trim() || !parentPhone.trim() || !password.trim()) {
-      alert("Vui lòng điền đầy đủ thông tin");
+      Alert.alert("Lỗi", "Vui lòng điền đầy đủ thông tin");
       return;
     }
 
     // Validate phone number format (Vietnamese phone numbers)
     const phoneRegex = /^(0|\+84)[0-9]{9}$/;
     if (!phoneRegex.test(parentPhone.replace(/\s/g, ""))) {
-      alert("Số điện thoại không hợp lệ");
+      Alert.alert("Lỗi", "Số điện thoại không hợp lệ");
       return;
     }
 
     // Validate password length
     if (password.length < 6) {
-      alert("Mật khẩu phải có ít nhất 6 ký tự");
+      Alert.alert("Lỗi", "Mật khẩu phải có ít nhất 6 ký tự");
       return;
     }
 
-    // TODO: Implement actual signup logic with backend
-    // For now, just save locally and navigate
+    setLoading(true);
+
     try {
+      // Call backend API
+      const response = await apiService.register({
+        childName: childName.trim(),
+        phone: parentPhone.replace(/\s/g, ""),
+        password,
+        grade: 1, // Default grade, can be changed later
+      });
+
+      // Save user data locally
       await AsyncStorage.setItem("hasCompletedOnboarding", "true");
-      await AsyncStorage.setItem("childName", childName);
-      await AsyncStorage.setItem("parentPhone", parentPhone);
-      router.replace("/(tabs)");
+      await AsyncStorage.setItem("parentPhone", response.phone);
+      await AsyncStorage.setItem("childName", response.childName);
+      if (response.grade) {
+        await AsyncStorage.setItem("selectedGrade", response.grade.toString());
+      }
+
+      // Show success message
+      Alert.alert(
+        "Đăng ký thành công! 🎉",
+        `Chào mừng ${response.childName} đến với Math App!`,
+        [
+          {
+            text: "Bắt đầu học",
+            onPress: () => router.replace("/(tabs)"),
+          },
+        ],
+      );
     } catch (error) {
-      console.error("Error saving data:", error);
+      console.error("Signup error:", error);
+      Alert.alert(
+        "Đăng ký thất bại",
+        error instanceof Error
+          ? error.message
+          : "Đã xảy ra lỗi. Vui lòng thử lại.",
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -178,19 +213,33 @@ export default function SignUpScreen() {
           {/* Let's Go Button */}
           <TouchableOpacity
             onPress={handleSignUp}
-            className="bg-[#4ADE80] rounded-3xl py-5 mt-8 shadow-lg active:scale-95"
+            disabled={loading}
+            className={`rounded-3xl py-5 mt-8 shadow-lg ${
+              loading ? "bg-gray-400" : "bg-[#4ADE80] active:scale-95"
+            }`}
             style={{
-              shadowColor: "#4ADE80",
+              shadowColor: loading ? "#9CA3AF" : "#4ADE80",
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.3,
               shadowRadius: 8,
             }}
           >
             <View className="flex-row items-center justify-center">
-              <Text className="text-xl font-bold text-gray-900 mr-2">
-                Bắt Đầu Thôi!
-              </Text>
-              <Text className="text-2xl">🚀</Text>
+              {loading ? (
+                <>
+                  <ActivityIndicator size="small" color="#1F2937" />
+                  <Text className="text-xl font-bold text-gray-900 ml-2">
+                    Đang đăng ký...
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text className="text-xl font-bold text-gray-900 mr-2">
+                    Bắt Đầu Thôi!
+                  </Text>
+                  <Text className="text-2xl">🚀</Text>
+                </>
+              )}
             </View>
           </TouchableOpacity>
 
