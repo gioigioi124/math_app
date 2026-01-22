@@ -12,9 +12,13 @@ const userSchema = new mongoose.Schema(
     // Grade level (1-5)
     grade: { type: Number, min: 1, max: 5 },
 
+    // Child's name
+    childName: { type: String },
+
     // Optional for guests, required for users
     username: { type: String, unique: true, sparse: true },
     email: { type: String, unique: true, sparse: true },
+    phone: { type: String, unique: true, sparse: true },
     password: { type: String },
 
     // User profile
@@ -26,8 +30,10 @@ const userSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password") || !this.password) return next();
+userSchema.pre("save", async function () {
+  if (!this.isModified("password") || !this.password) {
+    return;
+  }
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
 });

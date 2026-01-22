@@ -4,10 +4,10 @@ import { Progress } from "../models/progress.model";
 export const getProgress = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
-    const progress = await Progress.find({ user: req.user.id });
+    const progress = await Progress.find({ user: (req as any).user.id });
     res.json(progress);
   } catch (error) {
     next(error);
@@ -17,18 +17,18 @@ export const getProgress = async (
 export const updateProgress = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { lessonId, status, score } = req.body;
     const progress = await Progress.findOneAndUpdate(
-      { user: req.user.id, lesson: lessonId },
+      { user: (req as any).user.id, lesson: lessonId },
       {
         status,
         score,
         completedAt: status === "completed" ? new Date() : undefined,
       },
-      { upsert: true, new: true }
+      { upsert: true, new: true },
     );
     res.json(progress);
   } catch (error) {
