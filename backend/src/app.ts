@@ -10,6 +10,7 @@ import progressRoutes from "./routes/progress.route";
 import leaderboardRoutes from "./routes/leaderboard.route";
 import shopRoutes from "./routes/shop.route";
 import guestRoutes from "./routes/guest.route";
+import userRoutes from "./routes/user.route";
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.use(cookieParser());
 // API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/guest", guestRoutes);
+app.use("/api/user", userRoutes);
 app.use("/api/lessons", lessonRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);

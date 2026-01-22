@@ -5,10 +5,12 @@ import {
   TouchableOpacity,
   Animated,
   ScrollView,
+  Alert,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, Stack } from "expo-router";
 import { Feather, Ionicons } from "@expo/vector-icons";
+import { apiService } from "../services/api.service";
 
 interface GradeOption {
   id: number;
@@ -87,11 +89,43 @@ export default function GradeSelectScreen() {
   const handleContinue = async () => {
     if (selectedGrade) {
       try {
-        await AsyncStorage.setItem("selectedGrade", selectedGrade.toString());
-        // Navigate to signup screen
-        router.push("/signup");
+        // Check if user is already logged in
+        const authToken = await AsyncStorage.getItem("authToken");
+        const hasCompletedOnboarding = await AsyncStorage.getItem(
+          "hasCompletedOnboarding",
+        );
+
+        if (authToken && hasCompletedOnboarding === "true") {
+          // User is logged in, update grade via API
+          try {
+            await apiService.updateGrade(selectedGrade);
+            Alert.alert(
+              "Đã cập nhật! ✅",
+              `Bạn đã chuyển sang lớp ${selectedGrade}`,
+              [
+                {
+                  text: "OK",
+                  onPress: () => router.replace("/(tabs)"),
+                },
+              ],
+            );
+          } catch (error) {
+            // If API fails, still save locally
+            await AsyncStorage.setItem(
+              "selectedGrade",
+              selectedGrade.toString(),
+            );
+            console.error("Error updating grade via API:", error);
+            router.replace("/(tabs)");
+          }
+        } else {
+          // User is not logged in, just save locally and go to signup
+          await AsyncStorage.setItem("selectedGrade", selectedGrade.toString());
+          router.push("/signup");
+        }
       } catch (error) {
         console.error("Error saving grade:", error);
+        Alert.alert("Lỗi", "Không thể lưu lớp học. Vui lòng thử lại.");
       }
     }
   };
@@ -231,7 +265,7 @@ export default function GradeSelectScreen() {
             }}
           >
             <Text className="text-center text-white text-lg font-bold mr-2">
-              Let's Go!
+              Let&apos;s Go!
             </Text>
             {selectedGrade && (
               <Ionicons name="rocket" color="white" size={20} />

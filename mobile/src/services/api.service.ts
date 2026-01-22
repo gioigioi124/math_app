@@ -3,7 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 // TODO: Update this with your backend URL
 // For local development: http://localhost:5000 or your computer's IP
 // For production: your deployed backend URL
-const API_URL = "http://192.168.10.91:5000/api"; // Change this to your backend URL
+const API_URL = "http://192.168.10.91:5000/api"; // Backend API server
 
 // Auth API
 export interface RegisterData {
@@ -112,6 +112,19 @@ class ApiService {
       "parentPhone",
       "childName",
     ]);
+  }
+
+  // Update user grade
+  async updateGrade(grade: number): Promise<{ grade: number }> {
+    const response = await this.request<{ grade: number }>("/user/grade", {
+      method: "PUT",
+      body: JSON.stringify({ grade }),
+    });
+
+    // Update local storage
+    await AsyncStorage.setItem("selectedGrade", grade.toString());
+
+    return response;
   }
 
   // Check if user is authenticated
