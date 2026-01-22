@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useUserStats } from "../hooks/useProgressHooks";
 import { getSelectedGrade } from "../services/progress.service";
 
@@ -27,6 +27,13 @@ export default function ProfileScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Reload grade when screen is focused (e.g., after changing grade)
+  useFocusEffect(
+    useCallback(() => {
+      loadUserData();
+    }, []),
+  );
+
   const loadUserData = async () => {
     try {
       const savedGrade = await getSelectedGrade();
@@ -38,11 +45,9 @@ export default function ProfileScreen() {
 
   const handleChangeGrade = async () => {
     try {
-      await AsyncStorage.multiRemove([
-        "hasCompletedOnboarding",
-        "selectedGrade",
-      ]);
-      router.replace("/grade-selection");
+      // Only remove selectedGrade, keep hasCompletedOnboarding
+      await AsyncStorage.removeItem("selectedGrade");
+      router.push("/grade-selection");
     } catch (e) {
       console.error("Error resetting:", e);
     }

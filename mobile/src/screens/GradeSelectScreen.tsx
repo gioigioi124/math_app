@@ -105,7 +105,7 @@ export default function GradeSelectScreen() {
               [
                 {
                   text: "OK",
-                  onPress: () => router.replace("/(tabs)"),
+                  onPress: () => router.back(),
                 },
               ],
             );
@@ -116,7 +116,7 @@ export default function GradeSelectScreen() {
               selectedGrade.toString(),
             );
             console.error("Error updating grade via API:", error);
-            router.replace("/(tabs)");
+            router.back();
           }
         } else {
           // User is not logged in, just save locally and go to signup
