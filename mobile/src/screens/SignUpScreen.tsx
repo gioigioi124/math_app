@@ -46,13 +46,34 @@ export default function SignUpScreen() {
     setLoading(true);
 
     try {
-      // Call backend API
-      const response = await apiService.register({
-        childName: childName.trim(),
-        phone: parentPhone.replace(/\s/g, ""),
-        password,
-        grade: 1, // Default grade, can be changed later
-      });
+      // Check if there's a guest user to upgrade
+      const deviceId = await AsyncStorage.getItem("deviceId");
+      const guestUserId = await AsyncStorage.getItem("guestUserId");
+
+      let response;
+
+      if (deviceId && guestUserId) {
+        // Upgrade existing guest to user
+        response = await apiService.upgradeGuest({
+          deviceId,
+          childName: childName.trim(),
+          phone: parentPhone.replace(/\s/g, ""),
+          password,
+        });
+
+        console.log("Guest upgraded to user:", response);
+      } else {
+        // Normal registration (no guest user)
+        const selectedGrade = await AsyncStorage.getItem("selectedGrade");
+        response = await apiService.register({
+          childName: childName.trim(),
+          phone: parentPhone.replace(/\s/g, ""),
+          password,
+          grade: selectedGrade ? parseInt(selectedGrade) : 1,
+        });
+
+        console.log("New user registered:", response);
+      }
 
       // Save user data locally
       await AsyncStorage.setItem("hasCompletedOnboarding", "true");

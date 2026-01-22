@@ -119,9 +119,34 @@ export default function GradeSelectScreen() {
             router.back();
           }
         } else {
-          // User is not logged in, just save locally and go to signup
-          await AsyncStorage.setItem("selectedGrade", selectedGrade.toString());
-          router.push("/signup");
+          // User is not logged in - create guest user
+          try {
+            // Get or generate deviceId
+            let deviceId = await AsyncStorage.getItem("deviceId");
+            if (!deviceId) {
+              // Generate unique device ID
+              deviceId =
+                "device_" +
+                Date.now().toString(36) +
+                Math.random().toString(36).substr(2, 9);
+              await AsyncStorage.setItem("deviceId", deviceId);
+            }
+
+            // Create guest user via API
+            await apiService.createGuest(deviceId, selectedGrade);
+
+            // Save onboarding completion
+            await AsyncStorage.setItem("hasCompletedOnboarding", "true");
+
+            // Navigate to home screen
+            router.replace("/(tabs)");
+          } catch (error) {
+            console.error("Error creating guest:", error);
+            Alert.alert(
+              "Lỗi",
+              "Không thể tạo tài khoản. Vui lòng kiểm tra kết nối mạng.",
+            );
+          }
         }
       } catch (error) {
         console.error("Error saving grade:", error);

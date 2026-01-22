@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const MOCK_LEADERBOARD = [
   {
@@ -31,8 +32,32 @@ const MOCK_LEADERBOARD = [
 export default function LeaderboardScreen() {
   const [tab, setTab] = useState<"weekly" | "all-time">("weekly");
   const [fadeAnim] = useState(new Animated.Value(0));
+  const [meName, setMeName] = useState<string>("Bạn");
 
   useEffect(() => {
+    const loadMe = async () => {
+      try {
+        const authToken = await AsyncStorage.getItem("authToken");
+        const childName = await AsyncStorage.getItem("childName");
+        const deviceId = await AsyncStorage.getItem("deviceId");
+        const guestUserId = await AsyncStorage.getItem("guestUserId");
+
+        const isGuest = !authToken && !!guestUserId;
+        if (!isGuest && childName) {
+          setMeName(childName);
+          return;
+        }
+        if (isGuest && deviceId) {
+          setMeName(deviceId.length > 14 ? `${deviceId.slice(0, 6)}…${deviceId.slice(-6)}` : deviceId);
+          return;
+        }
+        setMeName("Bạn");
+      } catch {
+        setMeName("Bạn");
+      }
+    };
+
+    loadMe();
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 600,
@@ -41,8 +66,11 @@ export default function LeaderboardScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const topThree = MOCK_LEADERBOARD.slice(0, 3);
-  const others = MOCK_LEADERBOARD.slice(3);
+  const leaderboard = MOCK_LEADERBOARD.map((u) =>
+    u.isMe ? { ...u, name: meName } : u,
+  );
+  const topThree = leaderboard.slice(0, 3);
+  const others = leaderboard.slice(3);
 
   return (
     <View className="flex-1 bg-gray-50">

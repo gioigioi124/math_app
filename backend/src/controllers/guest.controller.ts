@@ -43,11 +43,11 @@ export const createGuest = async (req: Request, res: Response) => {
 // Upgrade guest to authenticated user
 export const upgradeGuest = async (req: Request, res: Response) => {
   try {
-    const { deviceId, username, email, password } = req.body;
+    const { deviceId, childName, phone, password } = req.body;
 
-    if (!deviceId || !username || !email || !password) {
+    if (!deviceId || !childName || !phone || !password) {
       return res.status(400).json({
-        message: "deviceId, username, email, and password are required",
+        message: "deviceId, childName, phone, and password are required",
       });
     }
 
@@ -58,37 +58,45 @@ export const upgradeGuest = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Guest user not found" });
     }
 
-    // Check if username or email already exists
+    // Check if phone already exists
     const existingUser = await User.findOne({
-      $or: [{ username }, { email }],
+      phone,
       _id: { $ne: guest._id },
     });
 
     if (existingUser) {
       return res.status(400).json({
-        message: "Username or email already in use",
+        message: "Số điện thoại đã được đăng ký",
       });
     }
 
     // Upgrade to user
     guest.type = "user";
-    guest.username = username;
-    guest.email = email;
+    guest.childName = childName;
+    guest.phone = phone;
     guest.password = password;
     await guest.save();
 
+    // Generate JWT token
+    const jwt = require("jsonwebtoken");
+    const token = jwt.sign(
+      { id: guest._id },
+      process.env.JWT_SECRET || "your-secret-key",
+      { expiresIn: "30d" },
+    );
+
     res.json({
       message: "Successfully upgraded to user account",
-      user: {
-        id: guest._id,
-        type: guest.type,
-        username: guest.username,
-        email: guest.email,
-        grade: guest.grade,
-        coins: guest.coins,
-        xp: guest.xp,
-        level: guest.level,
-      },
+      token,
+      _id: guest._id,
+      childName: guest.childName,
+      phone: guest.phone,
+      grade: guest.grade,
+      type: guest.type,
+      avatar: guest.avatar,
+      coins: guest.coins,
+      xp: guest.xp,
+      level: guest.level,
     });
   } catch (error) {
     console.error("Upgrade guest error:", error);

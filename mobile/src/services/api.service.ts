@@ -31,6 +31,26 @@ export interface AuthResponse {
   token: string;
 }
 
+// Guest API
+export interface GuestResponse {
+  user: {
+    _id: string;
+    type: "guest" | "user";
+    deviceId: string;
+    grade: number;
+    coins: number;
+    xp: number;
+    level: number;
+  };
+}
+
+export interface UpgradeGuestData {
+  deviceId: string;
+  childName: string;
+  phone: string;
+  password: string;
+}
+
 class ApiService {
   private async getAuthToken(): Promise<string | null> {
     return await AsyncStorage.getItem("authToken");
@@ -131,6 +151,45 @@ class ApiService {
   async isAuthenticated(): Promise<boolean> {
     const token = await this.getAuthToken();
     return !!token;
+  }
+
+  // Guest endpoints
+  async createGuest(deviceId: string, grade: number): Promise<GuestResponse> {
+    const response = await this.request<GuestResponse>("/guest", {
+      method: "POST",
+      body: JSON.stringify({ deviceId, grade }),
+    });
+
+    // Save guest data locally
+    if (response.user) {
+      await AsyncStorage.setItem("guestUserId", response.user._id);
+      await AsyncStorage.setItem("deviceId", deviceId);
+      await AsyncStorage.setItem("selectedGrade", grade.toString());
+    }
+
+    return response;
+  }
+
+  async getGuest(deviceId: string): Promise<GuestResponse> {
+    return this.request<GuestResponse>(`/guest/${deviceId}`);
+  }
+
+  async upgradeGuest(data: UpgradeGuestData): Promise<AuthResponse> {
+    const response = await this.request<AuthResponse>("/guest/upgrade", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+
+    // Save token and user data
+    if (response.token) {
+      await AsyncStorage.setItem("authToken", response.token);
+      await AsyncStorage.setItem("userId", response._id);
+      await AsyncStorage.setItem("userType", "user");
+      // Remove guest data
+      await AsyncStorage.removeItem("guestUserId");
+    }
+
+    return response;
   }
 }
 

@@ -5,6 +5,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Animated,
+  Alert,
 } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -14,8 +15,45 @@ import { getSelectedGrade } from "../services/progress.service";
 
 export default function ProfileScreen() {
   const [grade, setGrade] = useState(1);
+  const [userName, setUserName] = useState("Bạn nhỏ");
+  const [isGuest, setIsGuest] = useState(true);
+  const [deviceId, setDeviceId] = useState<string | null>(null);
   const { stats, totalLessonsCompleted, averageScore } = useUserStats();
   const [fadeAnim] = useState(new Animated.Value(0));
+
+  const formatDeviceId = useCallback((id: string) => {
+    // Hiển thị gọn gàng để không tràn UI, nhưng vẫn đủ để nhận diện
+    if (id.length <= 14) return id;
+    return `${id.slice(0, 6)}…${id.slice(-6)}`;
+  }, []);
+
+  const loadUserData = useCallback(async () => {
+    try {
+      const savedGrade = await getSelectedGrade();
+      setGrade(savedGrade);
+
+      const authToken = await AsyncStorage.getItem("authToken");
+      const guestUserId = await AsyncStorage.getItem("guestUserId");
+      const guest = !authToken && !!guestUserId;
+      setIsGuest(guest);
+
+      const savedDeviceId = await AsyncStorage.getItem("deviceId");
+      setDeviceId(savedDeviceId);
+
+      // Guest: dùng deviceId thay vì hardcode tên/lớp
+      if (guest) {
+        if (savedDeviceId) setUserName(formatDeviceId(savedDeviceId));
+        else setUserName("Guest");
+        return;
+      }
+
+      // User đã đăng nhập: ưu tiên childName
+      const childName = await AsyncStorage.getItem("childName");
+      if (childName) setUserName(childName);
+    } catch (error) {
+      console.error("Error loading user data:", error);
+    }
+  }, [formatDeviceId]);
 
   useEffect(() => {
     loadUserData();
@@ -24,24 +62,16 @@ export default function ProfileScreen() {
       duration: 600,
       useNativeDriver: true,
     }).start();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fadeAnim, loadUserData]);
 
   // Reload grade when screen is focused (e.g., after changing grade)
   useFocusEffect(
     useCallback(() => {
       loadUserData();
-    }, []),
+    }, [loadUserData])
   );
 
-  const loadUserData = async () => {
-    try {
-      const savedGrade = await getSelectedGrade();
-      setGrade(savedGrade);
-    } catch (error) {
-      console.error("Error loading user data:", error);
-    }
-  };
+  // `isGuest` đã được set trong loadUserData để tránh đọc AsyncStorage 2 lần
 
   const handleChangeGrade = async () => {
     try {
@@ -50,6 +80,26 @@ export default function ProfileScreen() {
       router.push("/grade-selection");
     } catch (e) {
       console.error("Error resetting:", e);
+    }
+  };
+
+  const handleResetApp = async () => {
+    try {
+      // Clear all data for testing
+      await AsyncStorage.clear();
+      Alert.alert(
+        "Reset thành công! 🔄",
+        "App đã được reset. Bạn sẽ quay lại màn hình chọn lớp.",
+        [
+          {
+            text: "OK",
+            onPress: () => router.replace("/grade-selection"),
+          },
+        ]
+      );
+    } catch (e) {
+      console.error("Error resetting app:", e);
+      Alert.alert("Lỗi", "Không thể reset app");
     }
   };
 
@@ -65,15 +115,15 @@ export default function ProfileScreen() {
     { id: "help", icon: "help-circle", title: "Trợ giúp", color: "#3B82F6" },
   ];
 
-  const gradeCharacters: Record<number, { name: string; icon: string }> = {
-    1: { name: "Sparky", icon: "🐱" },
-    2: { name: "Penny", icon: " Foxes" },
-    3: { name: "Ray", icon: "🐼" },
-    4: { name: "Dottie", icon: "🦁" },
-    5: { name: "Max", icon: "🐻" },
+  const gradeIcons: Record<number, string> = {
+    1: "🐱",
+    2: "🦊",
+    3: "🐼",
+    4: "🦁",
+    5: "🐻",
   };
 
-  const character = gradeCharacters[grade] || gradeCharacters[1];
+  const characterIcon = gradeIcons[grade] || gradeIcons[1];
 
   return (
     <View className="flex-1 bg-gray-50">
@@ -83,15 +133,24 @@ export default function ProfileScreen() {
           style={{ opacity: fadeAnim, transform: [{ scale: fadeAnim }] }}
           className="w-28 h-28 bg-white rounded-full items-center justify-center mb-4 shadow-2xl overflow-hidden"
         >
-          <Text className="text-6xl">{character.icon}</Text>
+          <Text className="text-6xl">{characterIcon}</Text>
         </Animated.View>
-        <Text className="text-white text-3xl font-black">{character.name}</Text>
-        <View className="bg-white/20 px-6 py-1.5 rounded-full mt-3 flex-row items-center border border-white/20">
-          <MaterialCommunityIcons name="school" size={18} color="white" />
-          <Text className="text-white font-bold text-base ml-2">
-            Lớp {grade}
-          </Text>
-        </View>
+        <Text className="text-white text-3xl font-black">{userName}</Text>
+        {isGuest ? (
+          <View className="bg-white/20 px-6 py-1.5 rounded-full mt-3 flex-row items-center border border-white/20">
+            <MaterialCommunityIcons name="cellphone" size={18} color="white" />
+            <Text className="text-white font-bold text-base ml-2">
+              ID: {deviceId ? formatDeviceId(deviceId) : "Chưa có"}
+            </Text>
+          </View>
+        ) : (
+          <View className="bg-white/20 px-6 py-1.5 rounded-full mt-3 flex-row items-center border border-white/20">
+            <MaterialCommunityIcons name="school" size={18} color="white" />
+            <Text className="text-white font-bold text-base ml-2">
+              Lớp {grade}
+            </Text>
+          </View>
+        )}
       </View>
 
       <ScrollView
@@ -156,31 +215,34 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         ))}
 
-        {/* Login Section */}
-        <View className="bg-white rounded-[32px] p-6 mt-4 mb-6 shadow-sm border border-teal-50">
-          <View className="flex-row items-center mb-4">
-            <View className="w-12 h-12 bg-pink-100 rounded-2xl items-center justify-center mr-4">
-              <Text className="text-2xl">🔐</Text>
+        {/* Login Section - Only show for guest users */}
+        {isGuest && (
+          <View className="bg-white rounded-[32px] p-6 mt-4 mb-6 shadow-sm border border-teal-50">
+            <View className="flex-row items-center mb-4">
+              <View className="w-12 h-12 bg-pink-100 rounded-2xl items-center justify-center mr-4">
+                <Text className="text-2xl">🔐</Text>
+              </View>
+              <View>
+                <Text className="text-gray-900 text-lg font-black">
+                  Lưu lại tiến trình
+                </Text>
+                <Text className="text-gray-500 text-sm">
+                  Đăng ký để thi đấu với bạn bè
+                </Text>
+              </View>
             </View>
-            <View>
-              <Text className="text-gray-900 text-lg font-black">
-                Lưu lại tiến trình
-              </Text>
-              <Text className="text-gray-500 text-sm">
-                Đăng nhập để thi đấu bạn bè
-              </Text>
-            </View>
-          </View>
 
-          <TouchableOpacity
-            className="bg-teal-500 rounded-3xl py-4 items-center shadow-lg shadow-teal-500/30"
-            activeOpacity={0.8}
-          >
-            <Text className="text-white font-black text-lg">
-              Đăng nhập ngay
-            </Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              onPress={() => router.push("/signup")}
+              className="bg-teal-500 rounded-3xl py-4 items-center shadow-lg shadow-teal-500/30"
+              activeOpacity={0.8}
+            >
+              <Text className="text-white font-black text-lg">
+                Đăng ký ngay
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Change Grade */}
         <TouchableOpacity
@@ -190,6 +252,16 @@ export default function ProfileScreen() {
         >
           <Feather name="refresh-cw" size={18} color="#6B7280" />
           <Text className="text-gray-600 font-bold ml-2">Thay đổi lớp học</Text>
+        </TouchableOpacity>
+
+        {/* Reset App - For Testing */}
+        <TouchableOpacity
+          onPress={handleResetApp}
+          activeOpacity={0.8}
+          className="bg-red-50 rounded-3xl p-5 flex-row items-center justify-center border border-red-100 mt-4"
+        >
+          <Feather name="trash-2" size={18} color="#DC2626" />
+          <Text className="text-red-600 font-bold ml-2">Reset App (Test)</Text>
         </TouchableOpacity>
 
         {/* Bottom spacing */}
