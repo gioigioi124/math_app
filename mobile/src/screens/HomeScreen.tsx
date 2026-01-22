@@ -1,83 +1,31 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+} from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
-
-// Mock data for lessons
-const lessons = [
-  {
-    id: "1-10",
-    number: "LESSON 1-10",
-    title: "Counting to 10",
-    icon: "🔢",
-    iconBg: "#FEF3C7",
-    iconColor: "#F59E0B",
-    progress: 80,
-    borderColor: "#F59E0B",
-    unlocked: true,
-  },
-  {
-    id: "1-20",
-    number: "LESSON 1-20",
-    title: "Simple Addition",
-    icon: "➕",
-    iconBg: "#FEE2E2",
-    iconColor: "#EF4444",
-    progress: 40,
-    borderColor: "#EF4444",
-    unlocked: true,
-  },
-  {
-    id: "1-30",
-    number: "LESSON 1-30",
-    title: "Shape Hunter",
-    icon: "🔺",
-    iconBg: "#DBEAFE",
-    iconColor: "#3B82F6",
-    progress: 10,
-    borderColor: "#3B82F6",
-    unlocked: true,
-  },
-  {
-    id: "1-40",
-    number: "LESSON 1-40",
-    title: "Number Bonds",
-    icon: "🔗",
-    iconBg: "#FCE7F3",
-    iconColor: "#EC4899",
-    progress: 0,
-    borderColor: "#14B8A6",
-    unlocked: true,
-  },
-  {
-    id: "1-50",
-    number: "LESSON 1-50",
-    title: "Subtraction Fun",
-    icon: "➖",
-    iconBg: "#FEE2E2",
-    iconColor: "#F87171",
-    progress: 0,
-    borderColor: "#E5E7EB",
-    unlocked: false,
-  },
-  {
-    id: "1-60",
-    number: "LESSON 1-60",
-    title: "Pattern Master",
-    icon: "📊",
-    iconBg: "#FED7AA",
-    iconColor: "#F97316",
-    progress: 0,
-    borderColor: "#14B8A6",
-    unlocked: false,
-  },
-];
+import { LESSON_CATEGORIES } from "../data/lessons.data";
+import { Lesson } from "../types/lesson.types";
 
 export default function HomeScreen() {
   const [grade, setGrade] = useState(1);
-  const [totalStars, setTotalStars] = useState(12);
-  const [maxStars] = useState(50);
+
+  // Lấy danh sách bài học từ data thay vì hardcode
+  const lessons = LESSON_CATEGORIES.flatMap((category) => category.lessons);
+  const unlockedLessons = lessons.filter((lesson) => lesson.unlocked);
+  const displayedLessons = unlockedLessons.length ? unlockedLessons : lessons;
+
+  // Tổng sao và giới hạn tối đa (3 sao mỗi bài)
+  const totalStars = displayedLessons.reduce(
+    (sum, lesson) => sum + (lesson.stars || 0),
+    0,
+  );
+  const maxStars = Math.max(displayedLessons.length * 3, 1);
 
   useEffect(() => {
     loadUserData();
@@ -102,11 +50,12 @@ export default function HomeScreen() {
     router.push("/(tabs)/lessons");
   };
 
-  const handleLessonPress = (lesson: (typeof lessons)[0]) => {
-    if (lesson.unlocked) {
-      // TODO: Navigate to lesson detail
-      console.log("Navigate to lesson:", lesson.id);
+  const handleLessonPress = (lesson: Lesson) => {
+    if (!lesson.unlocked) {
+      Alert.alert("Bài học đang khóa", "Hãy hoàn thành bài trước để mở khóa.");
+      return;
     }
+    router.push(`/lesson-detail?lessonId=${lesson.id}`);
   };
 
   // Calculate progress percentage
@@ -127,7 +76,7 @@ export default function HomeScreen() {
               </View>
               <View>
                 <Text className="text-white text-xl font-bold">
-                  Grade {grade} Math
+                  Toán Lớp {grade}
                 </Text>
                 <Text className="text-teal-100 text-sm font-medium">
                   LEVEL UP!
@@ -205,7 +154,7 @@ export default function HomeScreen() {
 
           {/* Lessons Grid */}
           <View className="flex-row flex-wrap justify-between">
-            {lessons.map((lesson) => (
+            {displayedLessons.map((lesson) => (
               <TouchableOpacity
                 key={lesson.id}
                 onPress={() => handleLessonPress(lesson)}
@@ -216,7 +165,7 @@ export default function HomeScreen() {
                   className="bg-white rounded-2xl p-4 relative"
                   style={{
                     borderLeftWidth: 4,
-                    borderLeftColor: lesson.borderColor,
+                    borderLeftColor: lesson.iconBg,
                     shadowColor: "#000",
                     shadowOffset: { width: 0, height: 2 },
                     shadowOpacity: 0.05,
