@@ -17,7 +17,6 @@ export default function ProfileScreen() {
   const [grade, setGrade] = useState(1);
   const [userName, setUserName] = useState("Bạn nhỏ");
   const [isGuest, setIsGuest] = useState(true);
-  const [deviceId, setDeviceId] = useState<string | null>(null);
   const { stats, totalLessonsCompleted, averageScore } = useUserStats();
   const [fadeAnim] = useState(new Animated.Value(0));
 
@@ -38,7 +37,6 @@ export default function ProfileScreen() {
       setIsGuest(guest);
 
       const savedDeviceId = await AsyncStorage.getItem("deviceId");
-      setDeviceId(savedDeviceId);
 
       // Guest: dùng deviceId thay vì hardcode tên/lớp
       if (guest) {
@@ -136,21 +134,12 @@ export default function ProfileScreen() {
           <Text className="text-6xl">{characterIcon}</Text>
         </Animated.View>
         <Text className="text-white text-3xl font-black">{userName}</Text>
-        {isGuest ? (
-          <View className="bg-white/20 px-6 py-1.5 rounded-full mt-3 flex-row items-center border border-white/20">
-            <MaterialCommunityIcons name="cellphone" size={18} color="white" />
-            <Text className="text-white font-bold text-base ml-2">
-              ID: {deviceId ? formatDeviceId(deviceId) : "Chưa có"}
-            </Text>
-          </View>
-        ) : (
-          <View className="bg-white/20 px-6 py-1.5 rounded-full mt-3 flex-row items-center border border-white/20">
-            <MaterialCommunityIcons name="school" size={18} color="white" />
-            <Text className="text-white font-bold text-base ml-2">
-              Lớp {grade}
-            </Text>
-          </View>
-        )}
+        <View className="bg-white/20 px-6 py-1.5 rounded-full mt-3 flex-row items-center border border-white/20">
+          <MaterialCommunityIcons name="school" size={18} color="white" />
+          <Text className="text-white font-bold text-base ml-2">
+            Lớp {grade}
+          </Text>
+        </View>
       </View>
 
       <ScrollView

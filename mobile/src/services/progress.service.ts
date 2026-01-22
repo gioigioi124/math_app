@@ -6,8 +6,12 @@ const KEYS = {
   LESSON_PROGRESS: "lesson_progress",
   ACTIVITY_PROGRESS: "activity_progress",
   USER_STATS: "user_stats",
-  SELECTED_GRADE: "selected_grade",
+  // Đồng bộ với phần còn lại của app (Login/Signup/GradeSelect/api.service...)
+  SELECTED_GRADE: "selectedGrade",
 };
+
+// Backward-compat: key cũ từng dùng trong progress.service
+const LEGACY_SELECTED_GRADE_KEY = "selected_grade";
 
 // ==================== Lesson Progress ====================
 
@@ -208,7 +212,19 @@ export const updateUserStats = async (
 
 export const getSelectedGrade = async (): Promise<number> => {
   try {
-    const grade = await AsyncStorage.getItem(KEYS.SELECTED_GRADE);
+    // Ưu tiên key chuẩn hiện tại
+    let grade = await AsyncStorage.getItem(KEYS.SELECTED_GRADE);
+
+    // Fallback: nếu trước đây đã lưu theo key cũ, đọc và migrate
+    if (!grade) {
+      const legacy = await AsyncStorage.getItem(LEGACY_SELECTED_GRADE_KEY);
+      if (legacy) {
+        grade = legacy;
+        await AsyncStorage.setItem(KEYS.SELECTED_GRADE, legacy);
+        await AsyncStorage.removeItem(LEGACY_SELECTED_GRADE_KEY);
+      }
+    }
+
     return grade ? parseInt(grade) : 1;
   } catch (error) {
     console.error("Error getting selected grade:", error);
@@ -219,6 +235,8 @@ export const getSelectedGrade = async (): Promise<number> => {
 export const saveSelectedGrade = async (grade: number): Promise<void> => {
   try {
     await AsyncStorage.setItem(KEYS.SELECTED_GRADE, grade.toString());
+    // Dọn key legacy nếu còn
+    await AsyncStorage.removeItem(LEGACY_SELECTED_GRADE_KEY);
   } catch (error) {
     console.error("Error saving selected grade:", error);
     throw error;
