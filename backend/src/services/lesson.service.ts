@@ -90,6 +90,54 @@ const generateQuestions = (engine: string, config: any, lessonId: string) => {
         metadata: { a: result, emoji: randomEmoji },
       });
     }
+  } else if (engine === "matching-v1") {
+    const { min = 1, max = 5, total = 3 } = config;
+    const emojis = ["🍎", "🍬", "⭐", "🦆", "🍓", "🎈"];
+
+    // Generate pairs
+    const pairs = [];
+    const usedValues = new Set();
+
+    while (pairs.length < total) {
+      const val = Math.floor(Math.random() * (max - min + 1)) + min;
+      if (!usedValues.has(val)) {
+        usedValues.add(val);
+        const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+        pairs.push({ val, emoji });
+      }
+    }
+
+    // Prepare left (numbers) and right (images)
+    const left = pairs.map((p, idx) => ({ id: `l-${idx}`, val: p.val }));
+    const right = pairs.map((p, idx) => ({
+      id: `r-${idx}`,
+      count: p.val,
+      emoji: p.emoji,
+    }));
+
+    // Helper shuffle function (Fisher-Yates)
+    const shuffle = (array: any[]) => {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    };
+
+    const shuffledLeft = shuffle([...left]);
+    const shuffledRight = shuffle([...right]);
+
+    questions.push({
+      _id: `dynamic-match-0`,
+      lessonId: lessonId,
+      text: `Bé hãy nối số với hình tương ứng nhé!`,
+      type: "matching",
+      metadata: {
+        left: shuffledLeft,
+        right: shuffledRight,
+        pairs: pairs, // For validation in FE
+      },
+    });
   }
 
   return questions;

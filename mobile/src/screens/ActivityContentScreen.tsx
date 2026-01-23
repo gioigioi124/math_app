@@ -106,6 +106,11 @@ export default function ActivityContentScreen() {
   const [score, setScore] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
 
+  // States for Matching Activity
+  const [leftSelected, setLeftSelected] = useState<string | null>(null);
+  const [rightSelected, setRightSelected] = useState<string | null>(null);
+  const [matchedIds, setMatchedIds] = useState<string[]>([]);
+
   const handleStartActivity = () => {
     if (questions.length > 0) {
       setCurrentQuestionIndex(0);
@@ -147,6 +152,68 @@ export default function ActivityContentScreen() {
     }, 1000);
   };
 
+  const handleMatchSelect = (id: string, side: "left" | "right") => {
+    if (matchedIds.includes(id)) return;
+
+    if (side === "left") {
+      setLeftSelected(id === leftSelected ? null : id);
+    } else {
+      setRightSelected(id === rightSelected ? null : id);
+    }
+  };
+
+  useEffect(() => {
+    if (leftSelected && rightSelected) {
+      const question = questions[currentQuestionIndex];
+      if (question?.type !== "matching" || !question.metadata) return;
+
+      const leftItem = question.metadata.left.find(
+        (i: any) => i.id === leftSelected,
+      );
+      const rightItem = question.metadata.right.find(
+        (i: any) => i.id === rightSelected,
+      );
+
+      if (leftItem.val === rightItem.count) {
+        // Correct match
+        const newMatched = [...matchedIds, leftSelected, rightSelected];
+        setMatchedIds(newMatched);
+        setLeftSelected(null);
+        setRightSelected(null);
+
+        // Check if all matched
+        if (newMatched.length === question.metadata.left.length * 2) {
+          setScore(score + 1);
+          setTimeout(() => {
+            if (currentQuestionIndex < questions.length - 1) {
+              setCurrentQuestionIndex(currentQuestionIndex + 1);
+              setMatchedIds([]);
+            } else {
+              router.push(
+                `/celebration?lessonId=${lessonId}&activityId=${activityId}&score=100&accuracy=100`,
+              );
+            }
+          }, 1000);
+        }
+      } else {
+        // Wrong match - reset selections with a slight delay
+        setTimeout(() => {
+          setLeftSelected(null);
+          setRightSelected(null);
+        }, 500);
+      }
+    }
+  }, [
+    leftSelected,
+    rightSelected,
+    questions,
+    currentQuestionIndex,
+    matchedIds,
+    score,
+    lessonId,
+    activityId,
+  ]);
+
   if (loading) {
     return (
       <View className="flex-1 bg-gray-50 items-center justify-center">
@@ -179,7 +246,10 @@ export default function ActivityContentScreen() {
     };
 
     const emoji = getEmoji();
-    const count = parseInt(question.answers[question.correctIndex]) || 0;
+    const count =
+      question.type === "matching"
+        ? 0
+        : parseInt(question.answers?.[question.correctIndex]) || 0;
 
     if (!question) return null;
 
@@ -217,7 +287,7 @@ export default function ActivityContentScreen() {
                 ))}
               </View>
             </View>
-          ) : (
+          ) : question.type === "matching" ? null : (
             <View className="flex-row flex-wrap justify-center items-center py-4">
               {Array.from({ length: count }).map((_, i) => (
                 <Text key={i} className="text-5xl m-1">
@@ -228,54 +298,116 @@ export default function ActivityContentScreen() {
           )}
         </View>
 
-        <View>
-          {question.answers.map((answer: string, index: number) => {
-            const isSelected = selectedAnswer === index;
-            const isCorrect = index === question.correctIndex;
-            let bgColor = "bg-white";
-            let borderColor = "border-gray-200";
-            let textColor = "text-gray-700";
-
-            if (selectedAnswer !== null) {
-              if (isCorrect) {
-                bgColor = "bg-green-100";
-                borderColor = "border-green-400";
-                textColor = "text-green-700";
-              } else if (isSelected) {
-                bgColor = "bg-red-100";
-                borderColor = "border-red-400";
-                textColor = "text-red-700";
-              }
-            }
-
-            return (
-              <TouchableOpacity
-                key={index}
-                onPress={() => handleAnswerSelect(index)}
-                disabled={selectedAnswer !== null}
-                className={`p-4 rounded-2xl mb-4 border-2 ${bgColor} ${borderColor} flex-row items-center`}
-              >
-                <View
-                  className={`w-8 h-8 rounded-full border-2 border-pink-500 items-center justify-center mr-4 ${isSelected ? "bg-pink-500" : ""}`}
-                >
-                  <Text
-                    className={`font-bold ${isSelected ? "text-white" : "text-pink-500"}`}
+        {question.type === "matching" ? (
+          <View className="flex-row justify-between flex-1">
+            {/* Left Column (Numbers) */}
+            <View className="w-[45%]">
+              {question.metadata.left.map((item: any) => {
+                const isSelected = leftSelected === item.id;
+                const isMatched = matchedIds.includes(item.id);
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    onPress={() => handleMatchSelect(item.id, "left")}
+                    disabled={isMatched}
+                    className={`h-20 mb-4 rounded-2xl border-2 items-center justify-center ${
+                      isMatched
+                        ? "bg-green-100 border-green-400 opacity-50"
+                        : isSelected
+                          ? "bg-pink-100 border-pink-500"
+                          : "bg-white border-gray-200"
+                    }`}
                   >
-                    {String.fromCharCode(65 + index)}
-                  </Text>
-                </View>
-                <Text className={`text-lg font-bold ${textColor}`}>
-                  {answer}
-                </Text>
-                {selectedAnswer !== null && isCorrect && (
-                  <View style={{ marginLeft: "auto" }}>
-                    <Feather name="check-circle" size={24} color="#10B981" />
+                    <Text
+                      className={`text-3xl font-bold ${isMatched ? "text-green-600" : "text-gray-800"}`}
+                    >
+                      {item.val}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Right Column (Images) */}
+            <View className="w-[45%]">
+              {question.metadata.right.map((item: any) => {
+                const isSelected = rightSelected === item.id;
+                const isMatched = matchedIds.includes(item.id);
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    onPress={() => handleMatchSelect(item.id, "right")}
+                    disabled={isMatched}
+                    className={`h-20 mb-4 rounded-2xl border-2 items-center justify-center ${
+                      isMatched
+                        ? "bg-green-100 border-green-400 opacity-50"
+                        : isSelected
+                          ? "bg-pink-100 border-pink-500"
+                          : "bg-white border-gray-200"
+                    }`}
+                  >
+                    <View className="flex-row flex-wrap justify-center p-1">
+                      {Array.from({ length: item.count }).map((_, i) => (
+                        <Text key={i} className="text-lg m-0.5">
+                          {item.emoji}
+                        </Text>
+                      ))}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        ) : (
+          <View>
+            {question.answers.map((answer: string, index: number) => {
+              const isSelected = selectedAnswer === index;
+              const isCorrect = index === question.correctIndex;
+              let bgColor = "bg-white";
+              let borderColor = "border-gray-200";
+              let textColor = "text-gray-700";
+
+              if (selectedAnswer !== null) {
+                if (isCorrect) {
+                  bgColor = "bg-green-100";
+                  borderColor = "border-green-400";
+                  textColor = "text-green-700";
+                } else if (isSelected) {
+                  bgColor = "bg-red-100";
+                  borderColor = "border-red-400";
+                  textColor = "text-red-700";
+                }
+              }
+
+              return (
+                <TouchableOpacity
+                  key={index}
+                  onPress={() => handleAnswerSelect(index)}
+                  disabled={selectedAnswer !== null}
+                  className={`p-4 rounded-2xl mb-4 border-2 ${bgColor} ${borderColor} flex-row items-center`}
+                >
+                  <View
+                    className={`w-8 h-8 rounded-full border-2 border-pink-500 items-center justify-center mr-4 ${isSelected ? "bg-pink-500" : ""}`}
+                  >
+                    <Text
+                      className={`font-bold ${isSelected ? "text-white" : "text-pink-500"}`}
+                    >
+                      {String.fromCharCode(65 + index)}
+                    </Text>
                   </View>
-                )}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+                  <Text className={`text-lg font-bold ${textColor}`}>
+                    {answer}
+                  </Text>
+                  {selectedAnswer !== null && isCorrect && (
+                    <View style={{ marginLeft: "auto" }}>
+                      <Feather name="check-circle" size={24} color="#10B981" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
       </View>
     );
   }

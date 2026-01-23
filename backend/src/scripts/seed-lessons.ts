@@ -54,6 +54,15 @@ const seedData = async () => {
           icon: "➕",
           color: "#FCE7F3",
         },
+        {
+          id: "match-1-5",
+          title: "Nối số với hình ảnh",
+          description: "Bé hãy nối số với số lượng hình tương ứng nhé",
+          engine: "matching-v1",
+          config: { min: 1, max: 5, total: 4 },
+          icon: "🔗",
+          color: "#E0F2FE",
+        },
       ],
     });
 
