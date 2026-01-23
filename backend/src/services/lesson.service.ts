@@ -10,8 +10,7 @@ export const getLessonById = async (id: string) => {
   return await Lesson.findById(id);
 };
 
-const generateQuestions = (lesson: any) => {
-  const { engine, config } = lesson;
+const generateQuestions = (engine: string, config: any, lessonId: string) => {
   if (!engine || !config) return [];
 
   const questions = [];
@@ -43,7 +42,7 @@ const generateQuestions = (lesson: any) => {
 
       questions.push({
         _id: `dynamic-${i}`,
-        lessonId: lesson._id,
+        lessonId: lessonId,
         text: `Phép tính: ${a} + ${b} = ?`,
         answers: answers,
         correctIndex: answers.indexOf(result.toString()),
@@ -83,7 +82,7 @@ const generateQuestions = (lesson: any) => {
 
       questions.push({
         _id: `dynamic-rec-${i}`,
-        lessonId: lesson._id,
+        lessonId: lessonId,
         text: `Bé hãy đếm xem có bao nhiêu hình nhé!`,
         answers: answers,
         correctIndex: answers.indexOf(result.toString()),
@@ -101,8 +100,19 @@ export const getQuestionsByLessonId = async (
   activityId?: string,
 ) => {
   const lesson = await Lesson.findById(lessonId);
-  if (lesson && lesson.engine) {
-    return generateQuestions(lesson);
+  if (!lesson) return [];
+
+  // Check if specific activity has its own engine/config
+  if (activityId && lesson.activities) {
+    const activity = lesson.activities.find((a: any) => a.id === activityId);
+    if (activity && activity.engine) {
+      return generateQuestions(activity.engine, activity.config, lessonId);
+    }
+  }
+
+  // Fallback to top-level engine
+  if (lesson.engine) {
+    return generateQuestions(lesson.engine, lesson.config, lessonId);
   }
 
   const query: any = { lessonId };

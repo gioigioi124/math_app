@@ -17,41 +17,48 @@ const seedData = async () => {
     await Lesson.deleteMany({});
     await Question.deleteMany({});
 
-    // Create Lesson 1: Recognition (Dynamic)
+    // Create Lesson 1: Main Lesson with multiple activities
     const lesson1 = await Lesson.create({
-      title: "Nhận biết số từ 1 đến 5",
+      title: "Làm quen với các con số",
       grade: 1,
-      description: "Học cách nhận biết và đếm số từ 1 đến 5",
+      description: "Bé học cách nhận biết và cộng các số cơ bản",
       difficulty: "easy",
-      content: "Bài học này giúp bé làm quen với các con số cơ bản đầu tiên.",
-      engine: "recognition-v1",
-      config: {
-        min: 1,
-        max: 5,
-        total: 3,
-      },
-      xpReward: 10,
-      coinReward: 5,
+      content: "Chặng đường đầu tiên khám phá thế giới toán học!",
+      xpReward: 30,
+      coinReward: 20,
+      activities: [
+        {
+          id: "rec-1-5",
+          title: "Nhận biết số từ 1 đến 5",
+          description: "Bé hãy đếm các con vật đáng yêu nhé",
+          engine: "recognition-v1",
+          config: { min: 1, max: 5, total: 3 },
+          icon: "🔢",
+          color: "#DBEAFE",
+        },
+        {
+          id: "rec-6-10",
+          title: "Nhận biết số từ 6 đến 10",
+          description: "Cùng đếm các con số lớn hơn nào",
+          engine: "recognition-v1",
+          config: { min: 6, max: 10, total: 3 },
+          icon: "🔢",
+          color: "#FEF3C7",
+        },
+        {
+          id: "add-1-5",
+          title: "Phép cộng trong phạm vi 5",
+          description: "Thử tài làm phép tính cộng đơn giản",
+          engine: "addition-v1",
+          config: { min: 1, max: 5, total: 5 },
+          icon: "➕",
+          color: "#FCE7F3",
+        },
+      ],
     });
 
-    // Create Lesson 2: Addition (Dynamic)
-    const lesson2 = await Lesson.create({
-      title: "Phép cộng trong phạm vi 5",
-      grade: 1,
-      description: "Phép cộng cơ bản trong phạm vi 5",
-      difficulty: "easy",
-      content: "Bé học cách cộng các số nhỏ hơn 5.",
-      engine: "addition-v1",
-      config: {
-        min: 1,
-        max: 5,
-        total: 5,
-      },
-      xpReward: 15,
-      coinReward: 10,
-    });
-
-    console.log("Created Lessons:", lesson1.title, "and", lesson2.title);
+    console.log("Created Main Lesson:", lesson1.title);
+    console.log("Seeding complete!");
     console.log("Seeding complete!");
     process.exit();
   } catch (error) {

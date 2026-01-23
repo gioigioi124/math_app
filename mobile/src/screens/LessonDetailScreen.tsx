@@ -37,40 +37,41 @@ export default function LessonDetailScreen() {
       // Map backend lesson to frontend type
       const mappedLesson: Lesson = {
         id: fetchedLesson._id,
-        number: `BÀI HỌC ${fetchedLesson.grade || 1}`,
+        number: `BÀI HỌC 1`,
         title: fetchedLesson.title,
-        icon: fetchedLesson.title.includes("Đếm") ? "🦆" : "🔢",
+        icon: fetchedLesson.title.includes("số") ? "🔢" : "➕",
         iconBg: "#FEF3C7",
         progress: 0,
         unlocked: true,
         stars: 0,
         grade: `TOÁN LỚP ${fetchedLesson.grade}`,
-        totalActivities: 2,
+        totalActivities: fetchedLesson.activities?.length || 1,
         description: fetchedLesson.description,
         estimatedMinutes: 10,
         xpReward: fetchedLesson.xpReward,
-        activities: [
-          {
-            id: "main-lesson",
-            title: "Khám phá kiến thức",
-            status: "not-started",
-            icon: "📖",
-            iconBg: "#3B82F6",
-            color: "#DBEAFE",
-            description: "Học kiến thức mới về " + fetchedLesson.title,
-            estimatedMinutes: 5,
-          },
-          {
-            id: "final-quiz",
-            title: "Bài kiểm tra kiến thức",
-            status: "not-started",
-            icon: "📝",
-            iconBg: "#EC4899",
-            color: "#FCE7F3",
-            description: "Trả lời các câu hỏi về " + fetchedLesson.title,
-            estimatedMinutes: 5,
-          },
-        ],
+        activities: fetchedLesson.activities
+          ? fetchedLesson.activities.map((act: any) => ({
+              id: act.id,
+              title: act.title,
+              status: "not-started",
+              icon: act.icon || "📖",
+              iconBg: "#3B82F6",
+              color: act.color || "#DBEAFE",
+              description: act.description,
+              estimatedMinutes: 5,
+            }))
+          : [
+              {
+                id: "final-quiz",
+                title: "Bài kiểm tra kiến thức",
+                status: "not-started",
+                icon: "📝",
+                iconBg: "#EC4899",
+                color: "#FCE7F3",
+                description: "Trả lời các câu hỏi về " + fetchedLesson.title,
+                estimatedMinutes: 5,
+              },
+            ],
       };
 
       setLessonData(mappedLesson);

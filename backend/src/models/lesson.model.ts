@@ -11,12 +11,27 @@ const lessonSchema = new mongoose.Schema(
       default: "easy",
     },
     content: { type: String, required: true },
-    engine: { type: String }, // e.g., "addition-v1"
+    engine: { type: String }, // fallback engine
     config: {
       min: { type: Number },
       max: { type: Number },
       total: { type: Number },
     },
+    activities: [
+      {
+        id: { type: String, required: true },
+        title: { type: String, required: true },
+        description: { type: String },
+        engine: { type: String },
+        config: {
+          min: { type: Number },
+          max: { type: Number },
+          total: { type: Number },
+        },
+        icon: { type: String },
+        color: { type: String },
+      },
+    ],
     xpReward: { type: Number, default: 10 },
     coinReward: { type: Number, default: 5 },
   },
