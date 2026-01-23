@@ -33,6 +33,12 @@ export interface Lesson {
   estimatedMinutes?: number;
   xpReward?: number;
   coinReward?: number;
+  engine?: string;
+  config?: {
+    min?: number;
+    max?: number;
+    total?: number;
+  };
 }
 
 export interface LessonCategory {

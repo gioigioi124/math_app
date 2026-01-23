@@ -7,6 +7,7 @@ const questionSchema = new mongoose.Schema(
       ref: "Lesson",
       required: true,
     },
+    activityId: { type: String, required: true },
     text: { type: String, required: true },
     answers: [{ type: String, required: true }],
     correctIndex: { type: Number, required: true },

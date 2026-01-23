@@ -11,6 +11,12 @@ const lessonSchema = new mongoose.Schema(
       default: "easy",
     },
     content: { type: String, required: true },
+    engine: { type: String }, // e.g., "addition-v1"
+    config: {
+      min: { type: Number },
+      max: { type: Number },
+      total: { type: Number },
+    },
     xpReward: { type: Number, default: 10 },
     coinReward: { type: Number, default: 5 },
   },

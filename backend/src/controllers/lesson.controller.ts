@@ -37,6 +37,7 @@ export const getLessonQuestions = async (
   try {
     const questions = await lessonService.getQuestionsByLessonId(
       String(req.params.id),
+      req.query.activityId as string,
     );
     res.json(questions);
   } catch (error) {

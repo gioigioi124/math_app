@@ -17,29 +17,41 @@ const seedData = async () => {
     await Lesson.deleteMany({});
     await Question.deleteMany({});
 
-    // Create Lesson 1
+    // Create Lesson 1: Recognition (Dynamic)
     const lesson1 = await Lesson.create({
-      title: "Đếm trong phạm vi 10",
+      title: "Nhận biết số từ 1 đến 5",
       grade: 1,
-      description: "Học cách đếm các đồ vật từ 1 đến 10",
+      description: "Học cách nhận biết và đếm số từ 1 đến 5",
       difficulty: "easy",
-      content: "Bài học này giúp bé nhận biết và đếm các số trong phạm vi 10.",
+      content: "Bài học này giúp bé làm quen với các con số cơ bản đầu tiên.",
+      engine: "recognition-v1",
+      config: {
+        min: 1,
+        max: 5,
+        total: 3,
+      },
       xpReward: 10,
       coinReward: 5,
     });
 
-    console.log("Created Lesson:", lesson1.title);
-
-    // Create a question for Lesson 1
-    await Question.create({
-      lessonId: lesson1._id,
-      text: "Có bao nhiêu con vịt trong hình?",
-      answers: ["2", "3", "5", "8"],
-      correctIndex: 1, // 3 con vịt
+    // Create Lesson 2: Addition (Dynamic)
+    const lesson2 = await Lesson.create({
+      title: "Phép cộng trong phạm vi 5",
+      grade: 1,
+      description: "Phép cộng cơ bản trong phạm vi 5",
+      difficulty: "easy",
+      content: "Bé học cách cộng các số nhỏ hơn 5.",
+      engine: "addition-v1",
+      config: {
+        min: 1,
+        max: 5,
+        total: 5,
+      },
+      xpReward: 15,
+      coinReward: 10,
     });
 
-    console.log("Created Question for Lesson 1");
-
+    console.log("Created Lessons:", lesson1.title, "and", lesson2.title);
     console.log("Seeding complete!");
     process.exit();
   } catch (error) {

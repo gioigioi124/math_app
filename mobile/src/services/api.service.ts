@@ -201,8 +201,12 @@ class ApiService {
     return this.request<any>(`/lessons/${id}`);
   }
 
-  async getLessonQuestions(lessonId: string): Promise<any[]> {
-    return this.request<any[]>(`/lessons/${lessonId}/questions`);
+  async getLessonQuestions(
+    lessonId: string,
+    activityId?: string,
+  ): Promise<any[]> {
+    const query = activityId ? `?activityId=${activityId}` : "";
+    return this.request<any[]>(`/lessons/${lessonId}/questions${query}`);
   }
 }
 

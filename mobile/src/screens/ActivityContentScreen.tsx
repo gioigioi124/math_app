@@ -38,7 +38,10 @@ export default function ActivityContentScreen() {
 
       // Fetch from backend first
       const lesson = await apiService.getLesson(lessonId);
-      const fetchedQuestions = await apiService.getLessonQuestions(lessonId);
+      const fetchedQuestions = await apiService.getLessonQuestions(
+        lessonId,
+        activityId,
+      );
       setQuestions(fetchedQuestions);
 
       if (lesson) {
@@ -165,6 +168,7 @@ export default function ActivityContentScreen() {
     const question = questions[currentQuestionIndex];
     // Helper to get emoji based on question text
     const getEmoji = () => {
+      if (question.metadata?.emoji) return question.metadata.emoji;
       const text = question.text.toLowerCase();
       if (text.includes("vịt")) return "🦆";
       if (text.includes("táo")) return "🍎";
@@ -195,13 +199,33 @@ export default function ActivityContentScreen() {
             {question.text}
           </Text>
 
-          <View className="flex-row flex-wrap justify-center items-center py-4">
-            {Array.from({ length: count }).map((_, i) => (
-              <Text key={i} className="text-5xl m-1">
-                {emoji}
-              </Text>
-            ))}
-          </View>
+          {question.type === "addition" && question.metadata ? (
+            <View className="flex-row items-center justify-center py-4">
+              <View className="flex-row flex-wrap justify-center flex-1">
+                {Array.from({ length: question.metadata.a }).map((_, i) => (
+                  <Text key={`a-${i}`} className="text-3xl m-0.5">
+                    {emoji}
+                  </Text>
+                ))}
+              </View>
+              <Text className="text-3xl font-bold text-pink-500 mx-2">+</Text>
+              <View className="flex-row flex-wrap justify-center flex-1">
+                {Array.from({ length: question.metadata.b }).map((_, i) => (
+                  <Text key={`b-${i}`} className="text-3xl m-0.5">
+                    {emoji}
+                  </Text>
+                ))}
+              </View>
+            </View>
+          ) : (
+            <View className="flex-row flex-wrap justify-center items-center py-4">
+              {Array.from({ length: count }).map((_, i) => (
+                <Text key={i} className="text-5xl m-1">
+                  {emoji}
+                </Text>
+              ))}
+            </View>
+          )}
         </View>
 
         <View>
