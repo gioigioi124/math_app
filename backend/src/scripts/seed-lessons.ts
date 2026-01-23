@@ -81,6 +81,24 @@ const seedData = async () => {
           icon: "⚖️",
           color: "#F0FDF4",
         },
+        {
+          id: "order-1-5",
+          title: "Thứ tự từ 1 đến 5",
+          description: "Sắp xếp các số theo thứ tự tăng dần",
+          engine: "ordering-v1",
+          config: { min: 1, max: 5 },
+          icon: "📈",
+          color: "#F5F3FF",
+        },
+        {
+          id: "order-6-10",
+          title: "Thứ tự từ 6 đến 10",
+          description: "Thử thách sắp xếp các số lớn hơn",
+          engine: "ordering-v1",
+          config: { min: 6, max: 10 },
+          icon: "📈",
+          color: "#FFF7ED",
+        },
       ],
     });
 

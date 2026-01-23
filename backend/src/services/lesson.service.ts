@@ -176,6 +176,35 @@ const generateQuestions = (engine: string, config: any, lessonId: string) => {
         metadata: { a, b, emoji, isAskingMore },
       });
     }
+  } else if (engine === "ordering-v1") {
+    const { min = 1, max = 5 } = config;
+
+    // Helper shuffle function (Fisher-Yates)
+    const shuffle = (array: any[]) => {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    };
+
+    const sequence = [];
+    for (let i = min; i <= max; i++) {
+      sequence.push(i);
+    }
+
+    const shuffled = shuffle([...sequence]);
+
+    questions.push({
+      _id: `dynamic-order-0`,
+      lessonId: lessonId,
+      text: `Bé hãy nhấn vào các số theo thứ tự từ bé đến lớn nhé!`,
+      type: "ordering",
+      metadata: {
+        sequence: sequence, // Correct order
+        shuffled: shuffled, // Display order
+      },
+    });
   }
 
   return questions;

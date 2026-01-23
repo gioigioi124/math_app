@@ -111,6 +111,11 @@ export default function ActivityContentScreen() {
   const [rightSelected, setRightSelected] = useState<string | null>(null);
   const [matchedIds, setMatchedIds] = useState<string[]>([]);
 
+  // States for Ordering Activity
+  const [currentOrderIndex, setCurrentOrderIndex] = useState(0);
+  const [orderedValues, setOrderedValues] = useState<number[]>([]);
+  const [wrongOrderValue, setWrongOrderValue] = useState<number | null>(null);
+
   const handleStartActivity = () => {
     if (questions.length > 0) {
       setCurrentQuestionIndex(0);
@@ -214,6 +219,42 @@ export default function ActivityContentScreen() {
     activityId,
   ]);
 
+  const handleOrderSelect = (val: number) => {
+    if (orderedValues.includes(val) || wrongOrderValue !== null) return;
+
+    const question = questions[currentQuestionIndex];
+    const expectedValue = question.metadata.sequence[currentOrderIndex];
+
+    if (val === expectedValue) {
+      // Correct order
+      const newOrdered = [...orderedValues, val];
+      setOrderedValues(newOrdered);
+      setCurrentOrderIndex(currentOrderIndex + 1);
+
+      // Check if finished
+      if (newOrdered.length === question.metadata.sequence.length) {
+        setScore(score + 1);
+        setTimeout(() => {
+          if (currentQuestionIndex < questions.length - 1) {
+            setCurrentQuestionIndex(currentQuestionIndex + 1);
+            setOrderedValues([]);
+            setCurrentOrderIndex(0);
+          } else {
+            router.push(
+              `/celebration?lessonId=${lessonId}&activityId=${activityId}&score=100&accuracy=100`,
+            );
+          }
+        }, 1000);
+      }
+    } else {
+      // Wrong order
+      setWrongOrderValue(val);
+      setTimeout(() => {
+        setWrongOrderValue(null);
+      }, 500);
+    }
+  };
+
   if (loading) {
     return (
       <View className="flex-1 bg-gray-50 items-center justify-center">
@@ -247,7 +288,9 @@ export default function ActivityContentScreen() {
 
     const emoji = getEmoji();
     const count =
-      question.type === "matching" || question.type === "comparison"
+      question.type === "matching" ||
+      question.type === "comparison" ||
+      question.type === "ordering"
         ? 0
         : parseInt(question.answers?.[question.correctIndex]) || 0;
 
@@ -343,6 +386,34 @@ export default function ActivityContentScreen() {
                 </Text>
               </TouchableOpacity>
             </View>
+          ) : question.type === "ordering" && question.metadata ? (
+            <View className="flex-row flex-wrap justify-center py-4">
+              {question.metadata.shuffled.map((val: number) => {
+                const isOrdered = orderedValues.includes(val);
+                const isWrong = wrongOrderValue === val;
+
+                return (
+                  <TouchableOpacity
+                    key={val}
+                    onPress={() => handleOrderSelect(val)}
+                    disabled={isOrdered}
+                    className={`w-16 h-16 m-2 rounded-2xl border-4 items-center justify-center ${
+                      isOrdered
+                        ? "bg-green-100 border-green-400"
+                        : isWrong
+                          ? "bg-red-100 border-red-500"
+                          : "bg-white border-gray-200"
+                    }`}
+                  >
+                    <Text
+                      className={`text-2xl font-bold ${isOrdered ? "text-green-600" : isWrong ? "text-red-600" : "text-gray-800"}`}
+                    >
+                      {val}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           ) : question.type === "matching" ? null : (
             <View className="flex-row flex-wrap justify-center items-center py-4">
               {Array.from({ length: count }).map((_, i) => (
@@ -414,7 +485,8 @@ export default function ActivityContentScreen() {
               })}
             </View>
           </View>
-        ) : question.type === "comparison" ? null : (
+        ) : question.type === "comparison" ||
+          question.type === "ordering" ? null : (
           <View>
             {question.answers.map((answer: string, index: number) => {
               const isSelected = selectedAnswer === index;
