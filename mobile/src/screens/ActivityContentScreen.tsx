@@ -18,6 +18,7 @@ export default function ActivityContentScreen() {
   const lessonId = params.lessonId as string;
   const activityId = params.activityId as string;
   const isRetry = params.retry === "true";
+  const autoStart = params.autoStart === "true";
 
   const [fadeAnim] = useState(new Animated.Value(0));
   const [scaleAnim] = useState(new Animated.Value(0.9));
@@ -60,6 +61,11 @@ export default function ActivityContentScreen() {
         if (localActivity) {
           setActivity(localActivity);
         }
+      }
+
+      // Auto-start if requested
+      if (autoStart && fetchedQuestions.length > 0) {
+        setCurrentQuestionIndex(0);
       }
 
       // Animate

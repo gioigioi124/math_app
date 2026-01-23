@@ -45,11 +45,21 @@ export default function LessonDetailScreen() {
         unlocked: true,
         stars: 0,
         grade: `TOÁN LỚP ${fetchedLesson.grade}`,
-        totalActivities: 1,
+        totalActivities: 2,
         description: fetchedLesson.description,
-        estimatedMinutes: 5,
+        estimatedMinutes: 10,
         xpReward: fetchedLesson.xpReward,
         activities: [
+          {
+            id: "main-lesson",
+            title: "Khám phá kiến thức",
+            status: "not-started",
+            icon: "📖",
+            iconBg: "#3B82F6",
+            color: "#DBEAFE",
+            description: "Học kiến thức mới về " + fetchedLesson.title,
+            estimatedMinutes: 5,
+          },
           {
             id: "final-quiz",
             title: "Bài kiểm tra kiến thức",
@@ -88,7 +98,7 @@ export default function LessonDetailScreen() {
   const handleActivityPress = (activity: Activity) => {
     if (activity.status !== "locked") {
       router.push(
-        `/activity-content?activityId=${activity.id}&lessonId=${lessonId}`,
+        `/activity-content?activityId=${activity.id}&lessonId=${lessonId}&autoStart=true`,
       );
     }
   };
@@ -96,7 +106,7 @@ export default function LessonDetailScreen() {
   const handleRetryActivity = (activity: Activity) => {
     if (activity.status === "completed") {
       router.push(
-        `/activity-content?activityId=${activity.id}&lessonId=${lessonId}&retry=true`,
+        `/activity-content?activityId=${activity.id}&lessonId=${lessonId}&retry=true&autoStart=true`,
       );
     }
   };
