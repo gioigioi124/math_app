@@ -138,6 +138,44 @@ const generateQuestions = (engine: string, config: any, lessonId: string) => {
         pairs: pairs, // For validation in FE
       },
     });
+  } else if (engine === "comparison-v1") {
+    const { min = 1, max = 10, total = 3 } = config;
+    const emojis = ["🍎", "🍬", "⭐", "🦆", "🍓", "🎈"];
+
+    for (let i = 0; i < total; i++) {
+      let a = Math.floor(Math.random() * (max - min + 1)) + min;
+      let b = Math.floor(Math.random() * (max - min + 1)) + min;
+      while (a === b) {
+        b = Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+
+      const isAskingMore = Math.random() > 0.5;
+      const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+
+      const text = isAskingMore
+        ? `Bên nào có nhiều ${emoji} hơn?`
+        : `Bên nào có ít ${emoji} hơn?`;
+
+      const result = isAskingMore
+        ? a > b
+          ? "Bên trái"
+          : "Bên phải"
+        : a < b
+          ? "Bên trái"
+          : "Bên phải";
+
+      const answers = ["Bên trái", "Bên phải"];
+
+      questions.push({
+        _id: `dynamic-comp-${i}`,
+        lessonId: lessonId,
+        text: text,
+        type: "comparison",
+        answers: answers,
+        correctIndex: answers.indexOf(result),
+        metadata: { a, b, emoji, isAskingMore },
+      });
+    }
   }
 
   return questions;

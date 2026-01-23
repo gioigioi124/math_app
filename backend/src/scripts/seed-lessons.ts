@@ -63,6 +63,24 @@ const seedData = async () => {
           icon: "🔗",
           color: "#E0F2FE",
         },
+        {
+          id: "comp-1-5",
+          title: "So sánh trong phạm vi 5",
+          description: "Bé hãy xem bên nào nhiều hơn hoặc ít hơn nhé",
+          engine: "comparison-v1",
+          config: { min: 1, max: 5, total: 3 },
+          icon: "⚖️",
+          color: "#FEF2F2",
+        },
+        {
+          id: "comp-6-10",
+          title: "So sánh trong phạm vi 10",
+          description: "Cùng so sánh các nhóm số lượng lớn hơn nào",
+          engine: "comparison-v1",
+          config: { min: 6, max: 10, total: 3 },
+          icon: "⚖️",
+          color: "#F0FDF4",
+        },
       ],
     });
 

@@ -247,7 +247,7 @@ export default function ActivityContentScreen() {
 
     const emoji = getEmoji();
     const count =
-      question.type === "matching"
+      question.type === "matching" || question.type === "comparison"
         ? 0
         : parseInt(question.answers?.[question.correctIndex]) || 0;
 
@@ -286,6 +286,62 @@ export default function ActivityContentScreen() {
                   </Text>
                 ))}
               </View>
+            </View>
+          ) : question.type === "comparison" && question.metadata ? (
+            <View className="flex-row items-center justify-center py-4">
+              <TouchableOpacity
+                onPress={() => handleAnswerSelect(0)}
+                disabled={selectedAnswer !== null}
+                className={`flex-1 items-center rounded-3xl p-4 mx-2 min-h-[160px] justify-center border-4 ${
+                  selectedAnswer === 0
+                    ? 0 === question.correctIndex
+                      ? "bg-green-100 border-green-500"
+                      : "bg-red-100 border-red-500"
+                    : selectedAnswer !== null && 0 === question.correctIndex
+                      ? "bg-green-50 border-green-300"
+                      : "bg-gray-50 border-transparent"
+                }`}
+              >
+                <View className="flex-row flex-wrap justify-center">
+                  {Array.from({ length: question.metadata.a }).map((_, i) => (
+                    <Text key={`a-${i}`} className="text-4xl m-0.5">
+                      {question.metadata.emoji}
+                    </Text>
+                  ))}
+                </View>
+                <Text
+                  className={`mt-4 font-bold text-lg ${selectedAnswer === 0 ? "text-gray-900" : "text-gray-400"}`}
+                >
+                  Bên trái
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => handleAnswerSelect(1)}
+                disabled={selectedAnswer !== null}
+                className={`flex-1 items-center rounded-3xl p-4 mx-2 min-h-[160px] justify-center border-4 ${
+                  selectedAnswer === 1
+                    ? 1 === question.correctIndex
+                      ? "bg-green-100 border-green-500"
+                      : "bg-red-100 border-red-500"
+                    : selectedAnswer !== null && 1 === question.correctIndex
+                      ? "bg-green-50 border-green-300"
+                      : "bg-gray-50 border-transparent"
+                }`}
+              >
+                <View className="flex-row flex-wrap justify-center">
+                  {Array.from({ length: question.metadata.b }).map((_, i) => (
+                    <Text key={`b-${i}`} className="text-4xl m-0.5">
+                      {question.metadata.emoji}
+                    </Text>
+                  ))}
+                </View>
+                <Text
+                  className={`mt-4 font-bold text-lg ${selectedAnswer === 1 ? "text-gray-900" : "text-gray-400"}`}
+                >
+                  Bên phải
+                </Text>
+              </TouchableOpacity>
             </View>
           ) : question.type === "matching" ? null : (
             <View className="flex-row flex-wrap justify-center items-center py-4">
@@ -358,7 +414,7 @@ export default function ActivityContentScreen() {
               })}
             </View>
           </View>
-        ) : (
+        ) : question.type === "comparison" ? null : (
           <View>
             {question.answers.map((answer: string, index: number) => {
               const isSelected = selectedAnswer === index;
