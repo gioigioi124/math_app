@@ -31,6 +31,8 @@ export interface Lesson {
   activities: Activity[];
   description?: string;
   estimatedMinutes?: number;
+  xpReward?: number;
+  coinReward?: number;
 }
 
 export interface LessonCategory {

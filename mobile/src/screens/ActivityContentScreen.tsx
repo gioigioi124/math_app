@@ -34,28 +34,32 @@ export default function ActivityContentScreen() {
   const loadActivityData = async () => {
     try {
       setLoading(true);
-      // Try local first
-      let localActivity = getActivityById(lessonId, activityId);
 
-      if (localActivity) {
-        setActivity(localActivity);
-      } else {
-        // Fetch from backend
-        const lesson = await apiService.getLesson(lessonId);
-        const fetchedQuestions = await apiService.getLessonQuestions(lessonId);
+      // Fetch from backend first
+      const lesson = await apiService.getLesson(lessonId);
+      const fetchedQuestions = await apiService.getLessonQuestions(lessonId);
+      setQuestions(fetchedQuestions);
 
-        setQuestions(fetchedQuestions);
-
+      if (lesson) {
         setActivity({
           id: activityId,
-          title: activityId === "final-quiz" ? "Bài kiểm tra" : lesson.title,
+          title: lesson.title, // "Đếm trong phạm vi 10"
           status: "not-started",
-          icon: "❓",
-          iconBg: "#EC4899",
+          icon: "🔢",
+          iconBg: "#FEF3C7",
           color: "#FCE7F3",
-          description: lesson.description || "Kiểm tra kiến thức",
+          description:
+            fetchedQuestions.length > 0
+              ? `Câu hỏi: ${fetchedQuestions[0].text}`
+              : lesson.description || "Bài tập đếm cơ bản",
           estimatedMinutes: 5,
         });
+      } else {
+        // Fallback to local only if backend fails or returns nothing
+        let localActivity = getActivityById(lessonId, activityId);
+        if (localActivity) {
+          setActivity(localActivity);
+        }
       }
 
       // Animate
@@ -79,19 +83,59 @@ export default function ActivityContentScreen() {
       ]).start();
     } catch (error) {
       console.error("Error loading activity:", error);
+      // Final fallback to local data if network error
+      let localActivity = getActivityById(lessonId, activityId);
+      if (localActivity) {
+        setActivity(localActivity);
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(-1);
+  const [score, setScore] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+
   const handleStartActivity = () => {
-    // If we have questions, we could show a real quiz here.
-    // For this testing phase, we'll just show the questions count and then go to celebration.
-    const mockScore = Math.floor(Math.random() * 21) + 80;
-    const mockAccuracy = Math.floor(Math.random() * 11) + 90;
-    router.push(
-      `/celebration?lessonId=${lessonId}&activityId=${activityId}&score=${mockScore}&accuracy=${mockAccuracy}`,
-    );
+    if (questions.length > 0) {
+      setCurrentQuestionIndex(0);
+      setScore(0);
+      setSelectedAnswer(null);
+    } else {
+      // Mock completion if no questions
+      const mockScore = Math.floor(Math.random() * 21) + 80;
+      const mockAccuracy = Math.floor(Math.random() * 11) + 90;
+      router.push(
+        `/celebration?lessonId=${lessonId}&activityId=${activityId}&score=${mockScore}&accuracy=${mockAccuracy}`,
+      );
+    }
+  };
+
+  const handleAnswerSelect = (index: number) => {
+    if (selectedAnswer !== null) return;
+
+    setSelectedAnswer(index);
+    const isCorrect = index === questions[currentQuestionIndex].correctIndex;
+    if (isCorrect) setScore(score + 1);
+
+    setTimeout(() => {
+      if (currentQuestionIndex < questions.length - 1) {
+        setCurrentQuestionIndex(currentQuestionIndex + 1);
+        setSelectedAnswer(null);
+      } else {
+        // Finish quiz
+        const finalScore = Math.round(
+          ((isCorrect ? score + 1 : score) / questions.length) * 100,
+        );
+        const accuracy = Math.round(
+          ((isCorrect ? score + 1 : score) / questions.length) * 100,
+        );
+        router.push(
+          `/celebration?lessonId=${lessonId}&activityId=${activityId}&score=${finalScore}&accuracy=${accuracy}`,
+        );
+      }
+    }, 1000);
   };
 
   if (loading) {
@@ -110,8 +154,104 @@ export default function ActivityContentScreen() {
     );
   }
 
+  // Quiz UI
+  if (currentQuestionIndex >= 0 && questions[currentQuestionIndex]) {
+    const question = questions[currentQuestionIndex];
+    // Helper to get emoji based on question text
+    const getEmoji = () => {
+      const text = question.text.toLowerCase();
+      if (text.includes("vịt")) return "🦆";
+      if (text.includes("táo")) return "🍎";
+      if (text.includes("kẹo")) return "🍬";
+      if (text.includes("ngôi sao")) return "⭐";
+      if (text.includes("bút")) return "✏️";
+      return "🔢";
+    };
+
+    const emoji = getEmoji();
+    const count = parseInt(question.answers[question.correctIndex]) || 0;
+
+    if (!question) return null;
+
+    return (
+      <View className="flex-1 bg-pink-50 pt-14 px-6">
+        <View className="flex-row justify-between items-center mb-8">
+          <Text className="text-pink-600 font-bold">
+            Câu {currentQuestionIndex + 1}/{questions.length}
+          </Text>
+          <View className="bg-white px-3 py-1 rounded-full border border-pink-100">
+            <Text className="text-pink-500 font-bold">Điểm: {score}</Text>
+          </View>
+        </View>
+
+        <View className="bg-white rounded-3xl p-6 mb-8 shadow-sm">
+          <Text className="text-xl font-bold text-gray-900 text-center mb-4">
+            {question.text}
+          </Text>
+
+          <View className="flex-row flex-wrap justify-center items-center py-4">
+            {Array.from({ length: count }).map((_, i) => (
+              <Text key={i} className="text-5xl m-1">
+                {emoji}
+              </Text>
+            ))}
+          </View>
+        </View>
+
+        <View>
+          {question.answers.map((answer: string, index: number) => {
+            const isSelected = selectedAnswer === index;
+            const isCorrect = index === question.correctIndex;
+            let bgColor = "bg-white";
+            let borderColor = "border-gray-200";
+            let textColor = "text-gray-700";
+
+            if (selectedAnswer !== null) {
+              if (isCorrect) {
+                bgColor = "bg-green-100";
+                borderColor = "border-green-400";
+                textColor = "text-green-700";
+              } else if (isSelected) {
+                bgColor = "bg-red-100";
+                borderColor = "border-red-400";
+                textColor = "text-red-700";
+              }
+            }
+
+            return (
+              <TouchableOpacity
+                key={index}
+                onPress={() => handleAnswerSelect(index)}
+                disabled={selectedAnswer !== null}
+                className={`p-4 rounded-2xl mb-4 border-2 ${bgColor} ${borderColor} flex-row items-center`}
+              >
+                <View
+                  className={`w-8 h-8 rounded-full border-2 border-pink-500 items-center justify-center mr-4 ${isSelected ? "bg-pink-500" : ""}`}
+                >
+                  <Text
+                    className={`font-bold ${isSelected ? "text-white" : "text-pink-500"}`}
+                  >
+                    {String.fromCharCode(65 + index)}
+                  </Text>
+                </View>
+                <Text className={`text-lg font-bold ${textColor}`}>
+                  {answer}
+                </Text>
+                {selectedAnswer !== null && isCorrect && (
+                  <View style={{ marginLeft: "auto" }}>
+                    <Feather name="check-circle" size={24} color="#10B981" />
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+    );
+  }
+
   return (
-    <View className="flex-1 bg-gradient-to-b from-pink-50 to-white">
+    <View className="flex-1 bg-pink-50">
       {/* Header */}
       <View className="bg-white pt-14 pb-4 px-6 border-b border-gray-100">
         <View className="flex-row items-center justify-between">
@@ -372,55 +512,7 @@ export default function ActivityContentScreen() {
           </View>
         </Animated.View>
 
-        {/* Backend Questions (Testing) */}
-        {questions.length > 0 && (
-          <Animated.View
-            style={{
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
-            }}
-            className="mx-6 mb-6"
-          >
-            <Text className="text-lg font-bold text-gray-900 mb-3">
-              ❓ Câu hỏi từ Backend ({questions.length})
-            </Text>
-            {questions.map((q, index) => (
-              <View
-                key={q._id}
-                className="bg-white rounded-3xl p-5 mb-3"
-                style={{
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 8,
-                  elevation: 2,
-                }}
-              >
-                <Text className="text-gray-900 font-bold mb-2">
-                  Câu {index + 1}: {q.text}
-                </Text>
-                {q.answers.map((ans: string, i: number) => (
-                  <View
-                    key={i}
-                    className={`p-3 rounded-xl mb-2 ${
-                      i === q.correctIndex ? "bg-green-100" : "bg-gray-50"
-                    }`}
-                  >
-                    <Text
-                      className={
-                        i === q.correctIndex
-                          ? "text-green-700 font-bold"
-                          : "text-gray-600"
-                      }
-                    >
-                      {ans} {i === q.correctIndex ? "✅" : ""}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            ))}
-          </Animated.View>
-        )}
+        {/* Backend Questions (Testing) List removed as it is now interactive */}
 
         {/* Tips Card */}
         <Animated.View

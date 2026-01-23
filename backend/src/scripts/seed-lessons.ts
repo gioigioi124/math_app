@@ -35,7 +35,7 @@ const seedData = async () => {
       lessonId: lesson1._id,
       text: "Có bao nhiêu con vịt trong hình?",
       answers: ["2", "3", "5", "8"],
-      correctIndex: 2, // 5 con vịt
+      correctIndex: 1, // 3 con vịt
     });
 
     console.log("Created Question for Lesson 1");
