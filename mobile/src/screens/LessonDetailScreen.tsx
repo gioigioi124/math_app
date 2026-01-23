@@ -5,39 +5,84 @@ import {
   ScrollView,
   TouchableOpacity,
   Animated,
+  ActivityIndicator,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, router } from "expo-router";
-import { getLessonById } from "../data/lessons.data";
-import { Activity } from "../types/lesson.types";
+import { apiService } from "../services/api.service";
+import { Lesson, Activity } from "../types/lesson.types";
 import { useLessonProgress } from "../hooks/useProgressHooks";
 
 export default function LessonDetailScreen() {
   const params = useLocalSearchParams();
   const lessonId = params.lessonId as string;
 
+  const [lessonData, setLessonData] = useState<Lesson | null>(null);
+  const [loading, setLoading] = useState(true);
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(50));
 
-  const lessonData = getLessonById(lessonId);
   const { progressPercent, completedActivities } = useLessonProgress(lessonId);
 
   useEffect(() => {
-    // Animate on mount
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 400,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 400,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    loadLessonData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lessonId]);
+
+  const loadLessonData = async () => {
+    try {
+      setLoading(true);
+      const fetchedLesson = await apiService.getLesson(lessonId);
+
+      // Map backend lesson to frontend type
+      const mappedLesson: Lesson = {
+        id: fetchedLesson._id,
+        number: "LESSON 1",
+        title: fetchedLesson.title,
+        icon: "🔢",
+        iconBg: "#FEF3C7",
+        progress: 0,
+        unlocked: true,
+        stars: 0,
+        grade: `MATH GRADE ${fetchedLesson.grade}`,
+        totalActivities: 1,
+        description: fetchedLesson.description,
+        estimatedMinutes: 5,
+        activities: [
+          {
+            id: "final-quiz",
+            title: "Bài kiểm tra",
+            status: "not-started",
+            icon: "❓",
+            iconBg: "#EC4899",
+            color: "#FCE7F3",
+            description: "Kiểm tra kiến thức của bài học này",
+            estimatedMinutes: 5,
+          },
+        ],
+      };
+
+      setLessonData(mappedLesson);
+
+      // Animate after loading
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } catch (error) {
+      console.error("Error loading lesson detail:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleActivityPress = (activity: Activity) => {
     if (activity.status !== "locked") {
@@ -54,6 +99,14 @@ export default function LessonDetailScreen() {
       );
     }
   };
+
+  if (loading) {
+    return (
+      <View className="flex-1 bg-gray-50 items-center justify-center">
+        <ActivityIndicator size="large" color="#EC4899" />
+      </View>
+    );
+  }
 
   if (!lessonData) {
     return (

@@ -4,43 +4,65 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
   Alert,
 } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
-import { LESSON_CATEGORIES } from "../data/lessons.data";
+import { apiService } from "../services/api.service";
 import { Lesson } from "../types/lesson.types";
 
 export default function HomeScreen() {
   const [grade, setGrade] = useState(1);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Lấy danh sách bài học từ data thay vì hardcode
-  const lessons = LESSON_CATEGORIES.flatMap((category) => category.lessons);
-  const unlockedLessons = lessons.filter((lesson) => lesson.unlocked);
-  const displayedLessons = unlockedLessons.length ? unlockedLessons : lessons;
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const savedGrade = await AsyncStorage.getItem("selectedGrade");
+      const currentGrade = savedGrade ? parseInt(savedGrade) : 1;
+      setGrade(currentGrade);
+
+      const fetchedLessons = await apiService.getLessons(currentGrade);
+
+      // Map backend data to frontend Lesson type
+      const mappedLessons: Lesson[] = fetchedLessons.map(
+        (l: any, index: number) => ({
+          id: l._id,
+          number: `LESSON ${index + 1}`,
+          title: l.title,
+          icon: "🔢",
+          iconBg: index % 2 === 0 ? "#FEF3C7" : "#DBEAFE",
+          progress: 0,
+          unlocked: true,
+          stars: 0,
+          grade: `MATH GRADE ${l.grade}`,
+          totalActivities: 1,
+          activities: [],
+          description: l.description,
+        }),
+      );
+
+      setLessons(mappedLessons);
+    } catch (error) {
+      console.error("Error loading home data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Tổng sao và giới hạn tối đa (3 sao mỗi bài)
-  const totalStars = displayedLessons.reduce(
+  const totalStars = lessons.reduce(
     (sum, lesson) => sum + (lesson.stars || 0),
     0,
   );
-  const maxStars = Math.max(displayedLessons.length * 3, 1);
-
-  useEffect(() => {
-    loadUserData();
-  }, []);
-
-  const loadUserData = async () => {
-    try {
-      const savedGrade = await AsyncStorage.getItem("selectedGrade");
-      if (savedGrade) {
-        setGrade(parseInt(savedGrade));
-      }
-    } catch (error) {
-      console.error("Error loading user data:", error);
-    }
-  };
+  const maxStars = Math.max(lessons.length * 3, 1);
 
   const handleSettings = () => {
     // TODO: Navigate to settings
@@ -60,6 +82,14 @@ export default function HomeScreen() {
 
   // Calculate progress percentage
   const progressPercentage = (totalStars / maxStars) * 100;
+
+  if (loading) {
+    return (
+      <View className="flex-1 bg-gray-50 items-center justify-center">
+        <ActivityIndicator size="large" color="#14B8A6" />
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-gray-50">
@@ -129,7 +159,7 @@ export default function HomeScreen() {
           <View className="flex-row items-center">
             <Text className="text-teal-500 text-sm">✨</Text>
             <Text className="text-teal-500 text-sm font-medium ml-1">
-              You're doing great, keep going!
+              You&apos;re doing great, keep going!
             </Text>
           </View>
 
@@ -154,7 +184,7 @@ export default function HomeScreen() {
 
           {/* Lessons Grid */}
           <View className="flex-row flex-wrap justify-between">
-            {displayedLessons.map((lesson) => (
+            {lessons.map((lesson) => (
               <TouchableOpacity
                 key={lesson.id}
                 onPress={() => handleLessonPress(lesson)}

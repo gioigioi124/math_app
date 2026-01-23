@@ -5,10 +5,13 @@ import {
   ScrollView,
   TouchableOpacity,
   Animated,
+  ActivityIndicator,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, router } from "expo-router";
 import { getActivityById } from "../data/lessons.data";
+import { apiService } from "../services/api.service";
+import { Activity } from "../types/lesson.types";
 
 export default function ActivityContentScreen() {
   const params = useLocalSearchParams();
@@ -18,26 +21,86 @@ export default function ActivityContentScreen() {
 
   const [fadeAnim] = useState(new Animated.Value(0));
   const [scaleAnim] = useState(new Animated.Value(0.9));
-
-  const activity = getActivityById(lessonId, activityId);
+  const [slideAnim] = useState(new Animated.Value(20));
+  const [loading, setLoading] = useState(true);
+  const [activity, setActivity] = useState<Activity | null>(null);
+  const [questions, setQuestions] = useState<any[]>([]);
 
   useEffect(() => {
-    // Animate on mount
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        friction: 8,
-        tension: 40,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    loadActivityData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const loadActivityData = async () => {
+    try {
+      setLoading(true);
+      // Try local first
+      let localActivity = getActivityById(lessonId, activityId);
+
+      if (localActivity) {
+        setActivity(localActivity);
+      } else {
+        // Fetch from backend
+        const lesson = await apiService.getLesson(lessonId);
+        const fetchedQuestions = await apiService.getLessonQuestions(lessonId);
+
+        setQuestions(fetchedQuestions);
+
+        setActivity({
+          id: activityId,
+          title: activityId === "final-quiz" ? "Bài kiểm tra" : lesson.title,
+          status: "not-started",
+          icon: "❓",
+          iconBg: "#EC4899",
+          color: "#FCE7F3",
+          description: lesson.description || "Kiểm tra kiến thức",
+          estimatedMinutes: 5,
+        });
+      }
+
+      // Animate
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          friction: 8,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } catch (error) {
+      console.error("Error loading activity:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStartActivity = () => {
+    // If we have questions, we could show a real quiz here.
+    // For this testing phase, we'll just show the questions count and then go to celebration.
+    const mockScore = Math.floor(Math.random() * 21) + 80;
+    const mockAccuracy = Math.floor(Math.random() * 11) + 90;
+    router.push(
+      `/celebration?lessonId=${lessonId}&activityId=${activityId}&score=${mockScore}&accuracy=${mockAccuracy}`,
+    );
+  };
+
+  if (loading) {
+    return (
+      <View className="flex-1 bg-gray-50 items-center justify-center">
+        <ActivityIndicator size="large" color="#EC4899" />
+      </View>
+    );
+  }
 
   if (!activity) {
     return (
@@ -46,16 +109,6 @@ export default function ActivityContentScreen() {
       </View>
     );
   }
-
-  const handleStartActivity = () => {
-    // TODO: Navigate to actual activity implementation
-    // For now, simulate completion and go to celebration screen with random high results
-    const mockScore = Math.floor(Math.random() * 21) + 80; // 80-100
-    const mockAccuracy = Math.floor(Math.random() * 11) + 90; // 90-100
-    router.push(
-      `/celebration?lessonId=${lessonId}&activityId=${activityId}&score=${mockScore}&accuracy=${mockAccuracy}`,
-    );
-  };
 
   return (
     <View className="flex-1 bg-gradient-to-b from-pink-50 to-white">
@@ -318,6 +371,56 @@ export default function ActivityContentScreen() {
             </View>
           </View>
         </Animated.View>
+
+        {/* Backend Questions (Testing) */}
+        {questions.length > 0 && (
+          <Animated.View
+            style={{
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            }}
+            className="mx-6 mb-6"
+          >
+            <Text className="text-lg font-bold text-gray-900 mb-3">
+              ❓ Câu hỏi từ Backend ({questions.length})
+            </Text>
+            {questions.map((q, index) => (
+              <View
+                key={q._id}
+                className="bg-white rounded-3xl p-5 mb-3"
+                style={{
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 8,
+                  elevation: 2,
+                }}
+              >
+                <Text className="text-gray-900 font-bold mb-2">
+                  Câu {index + 1}: {q.text}
+                </Text>
+                {q.answers.map((ans: string, i: number) => (
+                  <View
+                    key={i}
+                    className={`p-3 rounded-xl mb-2 ${
+                      i === q.correctIndex ? "bg-green-100" : "bg-gray-50"
+                    }`}
+                  >
+                    <Text
+                      className={
+                        i === q.correctIndex
+                          ? "text-green-700 font-bold"
+                          : "text-gray-600"
+                      }
+                    >
+                      {ans} {i === q.correctIndex ? "✅" : ""}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            ))}
+          </Animated.View>
+        )}
 
         {/* Tips Card */}
         <Animated.View

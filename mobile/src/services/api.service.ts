@@ -191,6 +191,19 @@ class ApiService {
 
     return response;
   }
+
+  // Lesson endpoints
+  async getLessons(grade: number): Promise<any[]> {
+    return this.request<any[]>(`/lessons?grade=${grade}`);
+  }
+
+  async getLesson(id: string): Promise<any> {
+    return this.request<any>(`/lessons/${id}`);
+  }
+
+  async getLessonQuestions(lessonId: string): Promise<any[]> {
+    return this.request<any[]>(`/lessons/${lessonId}/questions`);
+  }
 }
 
 export const apiService = new ApiService();
