@@ -13,11 +13,13 @@ import { router, useFocusEffect } from "expo-router";
 import { useUserStats } from "../hooks/useProgressHooks";
 import { getSelectedGrade } from "../services/progress.service";
 import { apiService } from "../services/api.service";
+import { useUser } from "../providers/UserProvider";
 
 export default function ProfileScreen() {
   const [grade, setGrade] = useState(1);
   const [userName, setUserName] = useState("Bạn nhỏ");
-  const [isGuest, setIsGuest] = useState(true);
+  const [isGuestUser, setIsGuestUser] = useState(true);
+  const { logout: userLogout } = useUser();
   const { stats, totalLessonsCompleted, averageScore } = useUserStats();
   const [fadeAnim] = useState(new Animated.Value(0));
 
@@ -35,7 +37,7 @@ export default function ProfileScreen() {
       const authToken = await AsyncStorage.getItem("authToken");
       const guestUserId = await AsyncStorage.getItem("guestUserId");
       const guest = !authToken && !!guestUserId;
-      setIsGuest(guest);
+      setIsGuestUser(guest);
 
       const savedDeviceId = await AsyncStorage.getItem("deviceId");
 
@@ -105,6 +107,7 @@ export default function ProfileScreen() {
   const handleLogout = async () => {
     try {
       await apiService.logout();
+      await userLogout();
       Alert.alert("Đã đăng xuất!", "Bạn đã quay lại chế độ khách.", [
         {
           text: "OK",
@@ -220,7 +223,7 @@ export default function ProfileScreen() {
         ))}
 
         {/* Login Section - Only show for guest users */}
-        {isGuest && (
+        {isGuestUser && (
           <View className="bg-white rounded-[32px] p-6 mt-4 mb-6 shadow-sm border border-teal-50">
             <View className="flex-row items-center mb-4">
               <View className="w-12 h-12 bg-pink-100 rounded-2xl items-center justify-center mr-4">
@@ -259,7 +262,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
 
         {/* Logout Button - Show only for logged in users */}
-        {!isGuest && (
+        {!isGuestUser && (
           <TouchableOpacity
             onPress={handleLogout}
             activeOpacity={0.8}

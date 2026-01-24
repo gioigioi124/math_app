@@ -76,39 +76,104 @@ export const ProgressProvider: React.FC<{ children: ReactNode }> = ({
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Load all progress when component mounts or user changes
-  useEffect(() => {
-    loadAllProgress();
-  }, [user]);
+  const syncFromBackend = useCallback(async () => {
+    try {
+      const backendProgress = await apiService.getAllProgress();
+      if (!backendProgress || !Array.isArray(backendProgress)) return;
 
-  const loadAllProgress = async () => {
+      const syncedLessonProgress: Record<string, LessonProgress> = {};
+      const syncedActivityProgress: Record<string, ActivityProgress> = {};
+
+      for (const item of backendProgress) {
+        // 1. Sync Lesson Progress
+        const lessonId = item.lesson;
+        const lessonProg: LessonProgress = {
+          lessonId,
+          progress: item.status === "completed" ? 100 : item.score || 0,
+          completed: item.activities.filter(
+            (a: any) => a.status === "completed",
+          ).length,
+          updatedAt: item.updatedAt || new Date().toISOString(),
+        };
+
+        await saveLessonProgress(lessonId, lessonProg);
+        syncedLessonProgress[lessonId] = lessonProg;
+
+        // 2. Sync Activity Progress
+        if (item.activities && Array.isArray(item.activities)) {
+          for (const act of item.activities) {
+            const actProg: ActivityProgress = {
+              activityId: act.activityId,
+              lessonId,
+              status: act.status,
+              score: act.score,
+              accuracy: act.accuracy,
+              stars: act.stars,
+              completedAt: act.completedAt,
+              attempts: 1,
+            };
+
+            await saveActivityProgress(lessonId, act.activityId, actProg);
+            syncedActivityProgress[`${lessonId}_${act.activityId}`] = actProg;
+          }
+        }
+      }
+
+      // Merge with existing local state
+      setLessonProgressMap(
+        (prev) => new Map([...prev, ...Object.entries(syncedLessonProgress)]),
+      );
+      setActivityProgressMap(
+        (prev) => new Map([...prev, ...Object.entries(syncedActivityProgress)]),
+      );
+
+      // Recalculate stats based on newly synced data
+      const calculatedStats = await calculateUserStats();
+      setUserStats(calculatedStats);
+      await updateUserStats(calculatedStats);
+    } catch (error) {
+      console.error("Failed to sync from backend:", error);
+    }
+  }, []);
+
+  const loadAllProgress = useCallback(async () => {
     try {
       setLoading(true);
 
-      // Load all lesson progress
+      // Load all lesson progress from local storage
       const allLessonProgress = await getAllLessonProgress();
       setLessonProgressMap(new Map(Object.entries(allLessonProgress)));
 
-      // Load all activity progress
+      // Load all activity progress from local storage
       const allActivityProgress = await getAllActivityProgress();
       setActivityProgressMap(new Map(Object.entries(allActivityProgress)));
 
-      // Load user stats
-      const stats = await getUserStats();
-      if (stats) {
-        setUserStats(stats);
+      // If user is logged in, sync from backend to get latest data
+      if (user && user.type === "user") {
+        await syncFromBackend();
       } else {
-        // Calculate initial stats from loaded data
-        const calculatedStats = await calculateUserStats();
-        setUserStats(calculatedStats);
-        await updateUserStats(calculatedStats);
+        // For guest/offline, just load user stats from local storage
+        const stats = await getUserStats();
+        if (stats) {
+          setUserStats(stats);
+        } else {
+          // Calculate initial stats from loaded local data
+          const calculatedStats = await calculateUserStats();
+          setUserStats(calculatedStats);
+          await updateUserStats(calculatedStats);
+        }
       }
     } catch (error) {
       console.error("Failed to load progress:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, syncFromBackend]);
+
+  // Load all progress when component mounts or user changes
+  useEffect(() => {
+    loadAllProgress();
+  }, [user, loadAllProgress]);
 
   // ==================== Lesson Progress ====================
 
@@ -142,8 +207,8 @@ export const ProgressProvider: React.FC<{ children: ReactNode }> = ({
       newMap.set(lessonId, newProgress);
       setLessonProgressMap(newMap);
 
-      // Refresh stats
-      await refreshStats();
+      // Refresh stats with current state
+      await refreshStats(undefined, newMap);
 
       // Sync to backend if logged in (not guest)
       if (user && user.type === "user") {
@@ -194,7 +259,6 @@ export const ProgressProvider: React.FC<{ children: ReactNode }> = ({
           : 0;
       const existingStars = existing?.stars || 0;
       const finalStars = Math.max(existingStars, earnedStars);
-      const starDiff = finalStars - existingStars;
 
       const newProgress: ActivityProgress = {
         activityId,
@@ -219,21 +283,11 @@ export const ProgressProvider: React.FC<{ children: ReactNode }> = ({
       newMap.set(key, newProgress);
       setActivityProgressMap(newMap);
 
-      // Update user stats with new stars if any
-      if (starDiff > 0 && userStats) {
-        const updatedStats = {
-          ...userStats,
-          totalStarsEarned: (userStats.totalStarsEarned || 0) + starDiff,
-        };
-        setUserStats(updatedStats);
-        await updateUserStats(updatedStats);
-      }
-
       // Update lesson progress based on activities
-      await updateLessonProgressFromActivities(lessonId);
+      await updateLessonProgressFromActivities(lessonId, newMap);
 
-      // Refresh stats
-      await refreshStats();
+      // Refresh stats with current state
+      await refreshStats(newMap);
 
       // Sync to backend if logged in (not guest)
       if (user && user.type === "user") {
@@ -255,11 +309,17 @@ export const ProgressProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
-  const updateLessonProgressFromActivities = async (lessonId: string) => {
+  const updateLessonProgressFromActivities = async (
+    lessonId: string,
+    customActivityMap?: Map<string, ActivityProgress>,
+  ) => {
     try {
       // Get all activities for this lesson
-      const activities = await getLessonActivitiesProgress(lessonId);
-      const activityList = Object.values(activities);
+      const activityList = customActivityMap
+        ? Array.from(customActivityMap.values()).filter(
+            (a) => a.lessonId === lessonId,
+          )
+        : Object.values(await getLessonActivitiesProgress(lessonId));
 
       if (activityList.length === 0) return;
 
@@ -294,9 +354,15 @@ export const ProgressProvider: React.FC<{ children: ReactNode }> = ({
 
   // ==================== User Stats ====================
 
-  const refreshStats = async () => {
+  const refreshStats = async (
+    customActivityMap?: Map<string, ActivityProgress>,
+    customLessonMap?: Map<string, LessonProgress>,
+  ) => {
     try {
-      const calculatedStats = await calculateUserStats();
+      const calculatedStats = await calculateUserStats(
+        customLessonMap || lessonProgressMap,
+        customActivityMap || activityProgressMap,
+      );
       setUserStats(calculatedStats);
       await updateUserStats(calculatedStats);
     } catch (error) {

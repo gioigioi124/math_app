@@ -170,7 +170,7 @@ Phase 3 mở ra khả năng:
 
 - ✨ Hệ thống tặng sao (0-3 sao) dựa trên điểm số (50/70/90)
 - ✨ Lưu lại số lượng sao cao nhất cho từng bài tập (làm lại được điểm cao hơn sẽ cộng thêm sao)
-- ✨ Đồng bộ tiến độ và số sao lên Backend
+- ✨ Đồng bộ hai chiều (Two-way Sync): Lưu tiến độ lên Backend và tự động tải về khi đăng nhập trên thiết bị mới hoặc sau khi Reset
 - ✨ Cập nhật tổng số sao trong Profile và hiển thị trong danh sách bài học
 
 **Phase 7A & 7B Completed:**

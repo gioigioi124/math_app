@@ -295,9 +295,14 @@ export const clearAllProgress = async (): Promise<void> => {
 
 // ==================== Calculate Stats ====================
 
-export const calculateUserStats = async (): Promise<UserStats> => {
+export const calculateUserStats = async (
+  lessonProgressMap?: Map<string, LessonProgress>,
+  activityProgressMap?: Map<string, ActivityProgress>,
+): Promise<UserStats> => {
   try {
-    const allLessonProgress = await getAllLessonProgress();
+    const allLessonProgress = lessonProgressMap
+      ? Object.fromEntries(lessonProgressMap)
+      : await getAllLessonProgress();
     const lessonIds = Object.keys(allLessonProgress);
 
     let totalLessonsStarted = 0;
@@ -318,7 +323,14 @@ export const calculateUserStats = async (): Promise<UserStats> => {
       totalActivitiesCompleted += lessonProg.completed;
 
       // Get activities for this lesson
-      const activities = await getLessonActivitiesProgress(lessonId);
+      const activities = activityProgressMap
+        ? Object.fromEntries(
+            Array.from(activityProgressMap.entries()).filter(
+              ([key, a]) => a.lessonId === lessonId,
+            ),
+          )
+        : await getLessonActivitiesProgress(lessonId);
+
       for (const activityId in activities) {
         const activity = activities[activityId];
         if (activity.score !== undefined) {
@@ -329,6 +341,27 @@ export const calculateUserStats = async (): Promise<UserStats> => {
           totalStarsEarned += activity.stars;
         }
       }
+    }
+
+    // Nếu có activityProgressMap truyền vào, hãy quét TOÀN BỘ để đảm bảo không sót sao nào (đặc biệt là bài mới chưa có lessonProgress)
+    if (activityProgressMap) {
+      totalStarsEarned = 0;
+      totalScore = 0;
+      scoreCount = 0;
+      totalActivitiesCompleted = 0;
+
+      activityProgressMap.forEach((activity) => {
+        if (activity.stars !== undefined) {
+          totalStarsEarned += activity.stars;
+        }
+        if (activity.score !== undefined) {
+          totalScore += activity.score;
+          scoreCount++;
+        }
+        if (activity.status === "completed") {
+          totalActivitiesCompleted++;
+        }
+      });
     }
 
     const averageScore =

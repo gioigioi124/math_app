@@ -209,6 +209,10 @@ class ApiService {
     return this.request<any[]>(`/lessons/${lessonId}/questions${query}`);
   }
 
+  async getAllProgress(): Promise<any[]> {
+    return this.request<any[]>("/progress");
+  }
+
   async updateProgress(data: {
     lessonId: string;
     activityId?: string;
