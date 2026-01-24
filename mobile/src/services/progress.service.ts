@@ -135,6 +135,38 @@ export const getLessonActivitiesProgress = async (
   }
 };
 
+export const getAllActivityProgress = async (): Promise<
+  Record<string, ActivityProgress>
+> => {
+  try {
+    const keys = await AsyncStorage.getAllKeys();
+    const activityKeys = keys.filter((key) =>
+      key.startsWith(KEYS.ACTIVITY_PROGRESS),
+    );
+
+    const progressData: Record<string, ActivityProgress> = {};
+
+    for (const key of activityKeys) {
+      const data = await AsyncStorage.getItem(key);
+      if (data) {
+        // Key format: activity_progress_lessonId_activityId
+        const parts = key.split("_");
+        if (parts.length >= 4) {
+          const lessonId = parts[parts.length - 2];
+          const activityId = parts[parts.length - 1];
+          const storageKey = `${lessonId}_${activityId}`;
+          progressData[storageKey] = JSON.parse(data);
+        }
+      }
+    }
+
+    return progressData;
+  } catch (error) {
+    console.error("Error getting all activity progress:", error);
+    return {};
+  }
+};
+
 export const deleteActivityProgress = async (
   lessonId: string,
   activityId: string,

@@ -12,6 +12,7 @@ import {
   saveLessonProgress,
   getAllLessonProgress,
   saveActivityProgress,
+  getAllActivityProgress,
   getLessonActivitiesProgress,
   getUserStats,
   calculateUserStats,
@@ -88,12 +89,16 @@ export const ProgressProvider: React.FC<{ children: ReactNode }> = ({
       const allLessonProgress = await getAllLessonProgress();
       setLessonProgressMap(new Map(Object.entries(allLessonProgress)));
 
+      // Load all activity progress
+      const allActivityProgress = await getAllActivityProgress();
+      setActivityProgressMap(new Map(Object.entries(allActivityProgress)));
+
       // Load user stats
       const stats = await getUserStats();
       if (stats) {
         setUserStats(stats);
       } else {
-        // Calculate initial stats
+        // Calculate initial stats from loaded data
         const calculatedStats = await calculateUserStats();
         setUserStats(calculatedStats);
         await updateUserStats(calculatedStats);
