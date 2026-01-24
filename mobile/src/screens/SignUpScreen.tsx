@@ -16,12 +16,15 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { apiService } from "../services/api.service";
 
+import { useUser } from "../providers/UserProvider";
+
 export default function SignUpScreen() {
   const [childName, setChildName] = useState("");
   const [parentPhone, setParentPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { login } = useUser();
 
   const handleSignUp = async () => {
     // Validate inputs
@@ -46,34 +49,16 @@ export default function SignUpScreen() {
     setLoading(true);
 
     try {
-      // Check if there's a guest user to upgrade
-      const deviceId = await AsyncStorage.getItem("deviceId");
-      const guestUserId = await AsyncStorage.getItem("guestUserId");
+      // Normal registration
+      const selectedGrade = await AsyncStorage.getItem("selectedGrade");
+      const response = await apiService.register({
+        childName: childName.trim(),
+        phone: parentPhone.replace(/\s/g, ""),
+        password,
+        grade: selectedGrade ? parseInt(selectedGrade) : 1,
+      });
 
-      let response;
-
-      if (deviceId && guestUserId) {
-        // Upgrade existing guest to user
-        response = await apiService.upgradeGuest({
-          deviceId,
-          childName: childName.trim(),
-          phone: parentPhone.replace(/\s/g, ""),
-          password,
-        });
-
-        console.log("Guest upgraded to user:", response);
-      } else {
-        // Normal registration (no guest user)
-        const selectedGrade = await AsyncStorage.getItem("selectedGrade");
-        response = await apiService.register({
-          childName: childName.trim(),
-          phone: parentPhone.replace(/\s/g, ""),
-          password,
-          grade: selectedGrade ? parseInt(selectedGrade) : 1,
-        });
-
-        console.log("New user registered:", response);
-      }
+      console.log("New user registered:", response);
 
       // Save user data locally
       await AsyncStorage.setItem("hasCompletedOnboarding", "true");
@@ -82,6 +67,19 @@ export default function SignUpScreen() {
       if (response.grade) {
         await AsyncStorage.setItem("selectedGrade", response.grade.toString());
       }
+
+      // Update User Provider
+      await login({
+        id: response._id,
+        type: "user",
+        grade: response.grade || 1,
+        username: response.childName,
+        email: response.phone,
+        coins: response.coins || 0,
+        xp: response.xp || 0,
+        level: response.level || 1,
+        avatar: response.avatar,
+      });
 
       // Show success message
       Alert.alert(

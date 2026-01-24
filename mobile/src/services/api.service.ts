@@ -1,4 +1,6 @@
+import { Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { clearAllProgress } from "./progress.service";
 
 // TODO: Update this with your backend URL
 // For local development: http://localhost:5000 or your computer's IP
@@ -84,6 +86,22 @@ class ApiService {
 
       return data;
     } catch (error) {
+      console.error(`Request failed: ${endpoint}`, error);
+
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+
+      if (
+        errorMessage.includes("Network request failed") ||
+        errorMessage.includes("connection") ||
+        errorMessage.includes("Network")
+      ) {
+        Alert.alert(
+          "Lỗi kết nối",
+          `Không thể kết nối đến máy chủ (${API_URL}). Vui lòng kiểm tra mạng hoặc địa chỉ IP.`,
+        );
+      }
+
       if (error instanceof Error) {
         throw error;
       }
@@ -125,6 +143,7 @@ class ApiService {
   }
 
   async logout(): Promise<void> {
+    // 1. Clear auth-related keys
     await AsyncStorage.multiRemove([
       "authToken",
       "userId",
@@ -132,6 +151,9 @@ class ApiService {
       "parentPhone",
       "childName",
     ]);
+
+    // 2. Clear all local progress data
+    await clearAllProgress();
   }
 
   // Update user grade

@@ -7,6 +7,8 @@ import React, {
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+import { apiService } from "../services/api.service";
+
 // Types
 export interface GuestUser {
   id: string;
@@ -39,6 +41,7 @@ interface UserContextType {
     email: string;
     password: string;
   }) => Promise<void>;
+  login: (userData: AuthenticatedUser) => Promise<void>;
   logout: () => Promise<void>;
   isGuest: () => boolean;
 }
@@ -64,9 +67,25 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const savedUser = await AsyncStorage.getItem(GUEST_USER_KEY);
-        if (savedUser) {
-          setUser(JSON.parse(savedUser));
+        const token = await AsyncStorage.getItem("authToken");
+        if (token) {
+          // Reconstruct user from storage
+          const childName = await AsyncStorage.getItem("childName");
+          const parentPhone = await AsyncStorage.getItem("parentPhone");
+          const selectedGrade = await AsyncStorage.getItem("selectedGrade");
+          const userId = await AsyncStorage.getItem("userId");
+
+          setUser({
+            id: userId || "user",
+            type: "user",
+            grade: selectedGrade ? parseInt(selectedGrade) : 1,
+            username: childName || "Bạn nhỏ",
+            email: parentPhone || "",
+            avatar: "",
+            coins: 0,
+            xp: 0,
+            level: 1,
+          });
         }
       } catch (error) {
         console.error("Failed to load user:", error);
@@ -78,6 +97,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({
   }, []);
 
   const createGuestUser = async (grade: number) => {
+    // Legacy support or if we want to re-enable guest later
     const newGuest: GuestUser = {
       id: generateGuestId(),
       type: "guest",
@@ -91,7 +111,10 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({
   const updateGrade = async (grade: number) => {
     if (user) {
       const updatedUser = { ...user, grade };
-      await AsyncStorage.setItem(GUEST_USER_KEY, JSON.stringify(updatedUser));
+      // Also update storage for persistence
+      if (user.type === "guest") {
+        await AsyncStorage.setItem(GUEST_USER_KEY, JSON.stringify(updatedUser));
+      }
       setUser(updatedUser);
     }
   };
@@ -101,27 +124,18 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({
     email: string;
     password: string;
   }) => {
-    // TODO: Call backend API to upgrade guest to user
-    // For now, just update local state
-    if (user && user.type === "guest") {
-      const upgradedUser: AuthenticatedUser = {
-        id: user.id,
-        type: "user",
-        grade: user.grade,
-        username: userData.username,
-        email: userData.email,
-        avatar: "",
-        coins: 0,
-        xp: 0,
-        level: 1,
-      };
-      await AsyncStorage.setItem(GUEST_USER_KEY, JSON.stringify(upgradedUser));
-      setUser(upgradedUser);
-    }
+    // ... legacy implementation
+  };
+
+  const login = async (userData: AuthenticatedUser) => {
+    setUser(userData);
   };
 
   const logout = async () => {
-    await AsyncStorage.removeItem(GUEST_USER_KEY);
+    // 1. Clear backend and local keys
+    await apiService.logout();
+
+    // 2. Clear context state
     setUser(null);
   };
 
@@ -135,6 +149,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({
         createGuestUser,
         updateGrade,
         upgradeToUser,
+        login,
         logout,
         isGuest,
       }}

@@ -16,11 +16,14 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { apiService } from "../services/api.service";
 
+import { useUser } from "../providers/UserProvider";
+
 export default function LoginScreen() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { login } = useUser();
 
   const handleLogin = async () => {
     // Validate inputs
@@ -52,6 +55,19 @@ export default function LoginScreen() {
       if (response.grade) {
         await AsyncStorage.setItem("selectedGrade", response.grade.toString());
       }
+
+      // Update User Provider
+      await login({
+        id: response._id,
+        type: "user",
+        grade: response.grade || 1,
+        username: response.childName,
+        email: response.phone,
+        coins: response.coins || 0,
+        xp: response.xp || 0,
+        level: response.level || 1,
+        avatar: response.avatar,
+      });
 
       // Navigate to home
       router.replace("/(tabs)");

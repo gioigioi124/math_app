@@ -80,27 +80,7 @@ export default function ProfileScreen() {
       await AsyncStorage.removeItem("selectedGrade");
       router.push("/grade-selection");
     } catch (e) {
-      console.error("Error resetting:", e);
-    }
-  };
-
-  const handleResetApp = async () => {
-    try {
-      // Clear all data for testing
-      await AsyncStorage.clear();
-      Alert.alert(
-        "Reset thành công! 🔄",
-        "App đã được reset. Bạn sẽ quay lại màn hình chọn lớp.",
-        [
-          {
-            text: "OK",
-            onPress: () => router.replace("/grade-selection"),
-          },
-        ],
-      );
-    } catch (e) {
-      console.error("Error resetting app:", e);
-      Alert.alert("Lỗi", "Không thể reset app");
+      console.error("Error changing grade:", e);
     }
   };
 
@@ -272,16 +252,6 @@ export default function ProfileScreen() {
             <Text className="text-orange-600 font-bold ml-2">Đăng xuất</Text>
           </TouchableOpacity>
         )}
-
-        {/* Reset App - For Testing */}
-        <TouchableOpacity
-          onPress={handleResetApp}
-          activeOpacity={0.8}
-          className="bg-red-50 rounded-3xl p-5 flex-row items-center justify-center border border-red-100 mt-4"
-        >
-          <Feather name="trash-2" size={18} color="#DC2626" />
-          <Text className="text-red-600 font-bold ml-2">Reset App (Test)</Text>
-        </TouchableOpacity>
 
         {/* Bottom spacing */}
         <View className="h-10" />

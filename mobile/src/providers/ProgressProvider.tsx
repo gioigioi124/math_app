@@ -13,7 +13,6 @@ import {
   getAllLessonProgress,
   saveActivityProgress,
   getAllActivityProgress,
-  getLessonActivitiesProgress,
   getUserStats,
   calculateUserStats,
   updateUserStats,
@@ -172,6 +171,12 @@ export const ProgressProvider: React.FC<{ children: ReactNode }> = ({
 
   // Load all progress when component mounts or user changes
   useEffect(() => {
+    // Nếu user đăng xuất (null), xóa sạch state ngay lập tức
+    if (!user) {
+      setLessonProgressMap(new Map());
+      setActivityProgressMap(new Map());
+      setUserStats(null);
+    }
     loadAllProgress();
   }, [user, loadAllProgress]);
 
@@ -189,6 +194,7 @@ export const ProgressProvider: React.FC<{ children: ReactNode }> = ({
     progress: number,
     completed: number,
     lastActivityId?: string,
+    skipSync: boolean = false,
   ) => {
     try {
       const newProgress: LessonProgress = {
@@ -211,12 +217,13 @@ export const ProgressProvider: React.FC<{ children: ReactNode }> = ({
       await refreshStats(undefined, newMap);
 
       // Sync to backend if logged in (not guest)
-      if (user && user.type === "user") {
+      if (user && user.type === "user" && !skipSync) {
         try {
           await apiService.updateProgress({
             lessonId,
-            status: progress === 100 ? "completed" : "available",
-          });
+            lessonStatus: progress === 100 ? "completed" : "available",
+            lessonScore: progress,
+          } as any);
         } catch (error) {
           console.error("Failed to sync lesson progress to backend:", error);
         }
@@ -277,19 +284,35 @@ export const ProgressProvider: React.FC<{ children: ReactNode }> = ({
       // Save to storage
       await saveActivityProgress(lessonId, activityId, newProgress);
 
-      // Update local state
+      // 1. Local update for activity
       const key = `${lessonId}_${activityId}`;
       const newMap = new Map(activityProgressMap);
       newMap.set(key, newProgress);
       setActivityProgressMap(newMap);
 
-      // Update lesson progress based on activities
-      await updateLessonProgressFromActivities(lessonId, newMap);
+      // 2. Local update for lesson (passing true to skip immediate sync)
+      const activityList = Array.from(newMap.values()).filter(
+        (a) => a.lessonId === lessonId,
+      );
+      const completedCount = activityList.filter(
+        (a) => a.status === "completed",
+      ).length;
+      const totalActivities = activityList.length;
+      const progress = Math.round((completedCount / totalActivities) * 100);
 
-      // Refresh stats with current state
+      // Update local lesson state but skip sync (we'll do it combined below)
+      await updateLessonProgress(
+        lessonId,
+        progress,
+        completedCount,
+        activityId,
+        true,
+      );
+
+      // 3. Refresh stats with current state
       await refreshStats(newMap);
 
-      // Sync to backend if logged in (not guest)
+      // 4. COMBINED Sync to backend
       if (user && user.type === "user") {
         try {
           await apiService.updateProgress({
@@ -299,56 +322,15 @@ export const ProgressProvider: React.FC<{ children: ReactNode }> = ({
             score,
             accuracy,
             stars: finalStars,
-          });
+            lessonStatus: progress === 100 ? "completed" : "available",
+            lessonScore: progress,
+          } as any);
         } catch (error) {
-          console.error("Failed to sync activity progress to backend:", error);
+          console.error("Failed to sync combined progress to backend:", error);
         }
       }
     } catch (error) {
       console.error("Failed to update activity progress:", error);
-    }
-  };
-
-  const updateLessonProgressFromActivities = async (
-    lessonId: string,
-    customActivityMap?: Map<string, ActivityProgress>,
-  ) => {
-    try {
-      // Get all activities for this lesson
-      const activityList = customActivityMap
-        ? Array.from(customActivityMap.values()).filter(
-            (a) => a.lessonId === lessonId,
-          )
-        : Object.values(await getLessonActivitiesProgress(lessonId));
-
-      if (activityList.length === 0) return;
-
-      // Calculate completed count
-      const completedCount = activityList.filter(
-        (a) => a.status === "completed",
-      ).length;
-
-      // Calculate progress percentage
-      const totalActivities = activityList.length;
-      const progress = Math.round((completedCount / totalActivities) * 100);
-
-      // Find last activity
-      const lastActivity = activityList.reduce((latest, current) => {
-        if (!latest) return current;
-        const latestDate = latest.completedAt || "";
-        const currentDate = current.completedAt || "";
-        return currentDate > latestDate ? current : latest;
-      }, activityList[0]);
-
-      // Update lesson progress
-      await updateLessonProgress(
-        lessonId,
-        progress,
-        completedCount,
-        lastActivity.activityId,
-      );
-    } catch (error) {
-      console.error("Failed to update lesson progress from activities:", error);
     }
   };
 

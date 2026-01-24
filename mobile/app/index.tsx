@@ -14,8 +14,8 @@ export default function Index() {
 
   const checkOnboarding = async () => {
     try {
-      const value = await AsyncStorage.getItem("hasCompletedOnboarding");
-      if (value === "true") {
+      const token = await AsyncStorage.getItem("authToken");
+      if (token) {
         setHasCompletedOnboarding(true);
       }
     } catch (e) {

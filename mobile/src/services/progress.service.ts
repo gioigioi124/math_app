@@ -112,9 +112,8 @@ export const getLessonActivitiesProgress = async (
 ): Promise<Record<string, ActivityProgress>> => {
   try {
     const keys = await AsyncStorage.getAllKeys();
-    const activityKeys = keys.filter(
-      (key) =>
-        key.startsWith(KEYS.ACTIVITY_PROGRESS) && key.includes(`_${lessonId}_`),
+    const activityKeys = keys.filter((key) =>
+      key.startsWith(`${KEYS.ACTIVITY_PROGRESS}_${lessonId}_`),
     );
 
     const progressData: Record<string, ActivityProgress> = {};
@@ -122,8 +121,10 @@ export const getLessonActivitiesProgress = async (
     for (const key of activityKeys) {
       const data = await AsyncStorage.getItem(key);
       if (data) {
-        const parts = key.split("_");
-        const activityId = parts[parts.length - 1];
+        // storageKey format: lessonId_activityId
+        const storageKey = key.replace(`${KEYS.ACTIVITY_PROGRESS}_`, "");
+        const parts = storageKey.split("_");
+        const activityId = parts[parts.length - 1]; // Assume last part is activityId
         progressData[activityId] = JSON.parse(data);
       }
     }
@@ -150,13 +151,9 @@ export const getAllActivityProgress = async (): Promise<
       const data = await AsyncStorage.getItem(key);
       if (data) {
         // Key format: activity_progress_lessonId_activityId
-        const parts = key.split("_");
-        if (parts.length >= 4) {
-          const lessonId = parts[parts.length - 2];
-          const activityId = parts[parts.length - 1];
-          const storageKey = `${lessonId}_${activityId}`;
-          progressData[storageKey] = JSON.parse(data);
-        }
+        // Resulting storageKey: lessonId_activityId
+        const storageKey = key.replace(`${KEYS.ACTIVITY_PROGRESS}_`, "");
+        progressData[storageKey] = JSON.parse(data);
       }
     }
 
@@ -280,13 +277,33 @@ export const saveSelectedGrade = async (grade: number): Promise<void> => {
 export const clearAllProgress = async (): Promise<void> => {
   try {
     const keys = await AsyncStorage.getAllKeys();
-    const progressKeys = keys.filter(
-      (key) =>
+    // Danh sách các key CẦN GIỮ LẠI (Whiltelist)
+    const whitelist = [
+      "deviceId",
+      "hasCompletedOnboarding",
+      "selectedGrade",
+      "selected_grade",
+    ];
+
+    const keysToRemove = keys.filter((key) => {
+      // Không xóa các key trong whitelist
+      if (whitelist.includes(key)) return false;
+
+      // Xóa các key liên quan đến tiến độ
+      return (
         key.startsWith(KEYS.LESSON_PROGRESS) ||
         key.startsWith(KEYS.ACTIVITY_PROGRESS) ||
-        key === KEYS.USER_STATS,
-    );
-    await AsyncStorage.multiRemove(progressKeys);
+        key.startsWith(KEYS.USER_STATS) ||
+        key.startsWith("lesson_") ||
+        key.startsWith("activity_") ||
+        key.startsWith("user_") ||
+        key === "@guest_user" // Xóa luôn thông tin guest nếu có
+      );
+    });
+
+    if (keysToRemove.length > 0) {
+      await AsyncStorage.multiRemove(keysToRemove);
+    }
   } catch (error) {
     console.error("Error clearing all progress:", error);
     throw error;
