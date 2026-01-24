@@ -12,11 +12,47 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { apiService } from "../services/api.service";
 import { Lesson } from "../types/lesson.types";
+import { useProgress } from "../providers/ProgressProvider";
 
 export default function HomeScreen() {
+  const { lessonProgressMap, activityProgressMap, userStats } = useProgress();
   const [grade, setGrade] = useState(1);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Map lessons with real progress from provider
+  const lessonsWithProgress = lessons.map((lesson) => {
+    const prog = lessonProgressMap.get(lesson.id);
+    let totalStarsAchieved = 0;
+    let activityCount = 0;
+
+    activityProgressMap.forEach((actProg) => {
+      if (actProg.lessonId === lesson.id) {
+        totalStarsAchieved += actProg.stars || 0;
+        activityCount++;
+      }
+    });
+
+    const lessonStars =
+      activityCount > 0 ? Math.floor(totalStarsAchieved / activityCount) : 0;
+
+    return {
+      ...lesson,
+      progress: prog?.progress || 0,
+      stars: lessonStars,
+      unlocked: true, // For now keeping them unlocked
+    };
+  });
+
+  // Calculate live totals
+  const totalStars = userStats?.totalStarsEarned || 0;
+  // maxStars = (tổng số activity của tất cả lesson) * 3
+  const totalActivitiesCount = lessons.reduce(
+    (sum, lesson) => sum + (lesson.totalActivities || 1),
+    0,
+  );
+  const maxStars = Math.max(totalActivitiesCount * 3, 1);
+  const progressPercentage = Math.min((totalStars / maxStars) * 100, 100);
 
   useEffect(() => {
     loadData();
@@ -43,8 +79,8 @@ export default function HomeScreen() {
           unlocked: true,
           stars: 0,
           grade: `MATH GRADE ${l.grade}`,
-          totalActivities: 1,
-          activities: [],
+          totalActivities: l.activities?.length || 1,
+          activities: l.activities || [],
           description: l.description,
         }),
       );
@@ -56,13 +92,6 @@ export default function HomeScreen() {
       setLoading(false);
     }
   };
-
-  // Tổng sao và giới hạn tối đa (3 sao mỗi bài)
-  const totalStars = lessons.reduce(
-    (sum, lesson) => sum + (lesson.stars || 0),
-    0,
-  );
-  const maxStars = Math.max(lessons.length * 3, 1);
 
   const handleSettings = () => {
     // TODO: Navigate to settings
@@ -79,9 +108,6 @@ export default function HomeScreen() {
     }
     router.push(`/lesson-detail?lessonId=${lesson.id}`);
   };
-
-  // Calculate progress percentage
-  const progressPercentage = (totalStars / maxStars) * 100;
 
   if (loading) {
     return (
@@ -114,12 +140,12 @@ export default function HomeScreen() {
               </View>
             </View>
             <View className="flex-row gap-2">
-              <TouchableOpacity
-                onPress={() => router.push("/celebration")}
-                className="w-10 h-10 bg-pink-500 rounded-full items-center justify-center"
-              >
-                <Text className="text-lg">🎉</Text>
-              </TouchableOpacity>
+              <View className="bg-white/20 px-3 py-1 rounded-full flex-row items-center border border-white/20">
+                <Text className="text-white font-black text-base mr-1">
+                  {totalStars}
+                </Text>
+                <Text className="text-base">⭐</Text>
+              </View>
               <TouchableOpacity
                 onPress={handleSettings}
                 className="w-10 h-10 bg-white/20 rounded-full items-center justify-center"
@@ -138,12 +164,12 @@ export default function HomeScreen() {
                 <Text className="text-lg">⭐</Text>
               </View>
               <Text className="text-gray-800 text-lg font-bold">
-                Total Progress
+                Tiến độ chung
               </Text>
             </View>
             <View className="bg-teal-500 px-3 py-1 rounded-full">
               <Text className="text-white font-bold text-sm">
-                {totalStars} / {maxStars} Stars
+                {totalStars} / {maxStars} Sao
               </Text>
             </View>
           </View>
@@ -159,7 +185,7 @@ export default function HomeScreen() {
           <View className="flex-row items-center">
             <Text className="text-teal-500 text-sm">✨</Text>
             <Text className="text-teal-500 text-sm font-medium ml-1">
-              You&apos;re doing great, keep going!
+              Bé đang làm rất tốt, cố gắng lên nhé!
             </Text>
           </View>
 
@@ -173,18 +199,18 @@ export default function HomeScreen() {
         <View className="px-6 mt-6">
           <View className="flex-row justify-between items-center mb-4">
             <Text className="text-gray-900 text-2xl font-bold">
-              Your Lessons
+              Bài học của bé
             </Text>
             <TouchableOpacity onPress={handleSeeAll}>
               <Text className="text-teal-500 font-semibold text-base">
-                See All
+                Xem tất cả
               </Text>
             </TouchableOpacity>
           </View>
 
           {/* Lessons Grid */}
           <View className="flex-row flex-wrap justify-between">
-            {lessons.map((lesson) => (
+            {lessonsWithProgress.map((lesson) => (
               <TouchableOpacity
                 key={lesson.id}
                 onPress={() => handleLessonPress(lesson)}
