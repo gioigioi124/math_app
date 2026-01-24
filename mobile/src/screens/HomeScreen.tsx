@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -15,42 +15,43 @@ import { Lesson } from "../types/lesson.types";
 import { useProgress } from "../providers/ProgressProvider";
 
 export default function HomeScreen() {
-  const { lessonProgressMap, activityProgressMap, userStats } = useProgress();
+  const { activityProgressMap, userStats } = useProgress();
   const [grade, setGrade] = useState(1);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Map lessons with real progress from provider
-  const lessonsWithProgress = lessons.map((lesson) => {
-    const prog = lessonProgressMap.get(lesson.id);
-    let totalStarsAchieved = 0;
-    let activityCount = 0;
+  const lessonsWithProgress = useMemo(() => {
+    return lessons.map((lesson) => {
+      let achievedStars = 0;
 
-    activityProgressMap.forEach((actProg) => {
-      if (actProg.lessonId === lesson.id) {
-        totalStarsAchieved += actProg.stars || 0;
-        activityCount++;
-      }
+      activityProgressMap.forEach((actProg) => {
+        if (actProg.lessonId === lesson.id) {
+          achievedStars += actProg.stars || 0;
+        }
+      });
+
+      const lessonMaxStars = (lesson.totalActivities || 1) * 3;
+
+      return {
+        ...lesson,
+        achievedStars,
+        maxStars: lessonMaxStars,
+        unlocked: true, // For now keeping them unlocked
+      };
     });
-
-    const lessonStars =
-      activityCount > 0 ? Math.floor(totalStarsAchieved / activityCount) : 0;
-
-    return {
-      ...lesson,
-      progress: prog?.progress || 0,
-      stars: lessonStars,
-      unlocked: true, // For now keeping them unlocked
-    };
-  });
+  }, [lessons, activityProgressMap]);
 
   // Calculate live totals
   const totalStars = userStats?.totalStarsEarned || 0;
   // maxStars = (tổng số activity của tất cả lesson) * 3
-  const totalActivitiesCount = lessons.reduce(
-    (sum, lesson) => sum + (lesson.totalActivities || 1),
-    0,
-  );
+  const totalActivitiesCount = useMemo(() => {
+    return lessons.reduce(
+      (sum, lesson) => sum + (lesson.totalActivities || 1),
+      0,
+    );
+  }, [lessons]);
+
   const maxStars = Math.max(totalActivitiesCount * 3, 1);
   const progressPercentage = Math.min((totalStars / maxStars) * 100, 100);
 
@@ -71,14 +72,14 @@ export default function HomeScreen() {
       const mappedLessons: Lesson[] = fetchedLessons.map(
         (l: any, index: number) => ({
           id: l._id,
-          number: `LESSON ${index + 1}`,
+          number: `BÀI HỌC ${index + 1}`,
           title: l.title,
-          icon: "🔢",
+          icon: l.title.toLowerCase().includes("số") ? "🔢" : "➕",
           iconBg: index % 2 === 0 ? "#FEF3C7" : "#DBEAFE",
           progress: 0,
           unlocked: true,
           stars: 0,
-          grade: `MATH GRADE ${l.grade}`,
+          grade: `LỚP ${l.grade}`,
           totalActivities: l.activities?.length || 1,
           activities: l.activities || [],
           description: l.description,
@@ -101,7 +102,7 @@ export default function HomeScreen() {
     router.push("/(tabs)/lessons");
   };
 
-  const handleLessonPress = (lesson: Lesson) => {
+  const handleLessonPress = (lesson: any) => {
     if (!lesson.unlocked) {
       Alert.alert("Bài học đang khóa", "Hãy hoàn thành bài trước để mở khóa.");
       return;
@@ -134,8 +135,8 @@ export default function HomeScreen() {
                 <Text className="text-white text-xl font-bold">
                   Toán Lớp {grade}
                 </Text>
-                <Text className="text-teal-100 text-sm font-medium">
-                  LEVEL UP!
+                <Text className="text-teal-100 text-sm font-medium uppercase">
+                  Tiến lên nào!
                 </Text>
               </View>
             </View>
@@ -185,7 +186,7 @@ export default function HomeScreen() {
           <View className="flex-row items-center">
             <Text className="text-teal-500 text-sm">✨</Text>
             <Text className="text-teal-500 text-sm font-medium ml-1">
-              Bé đang làm rất tốt, cố gắng lên nhé!
+              Bạn đang làm rất tốt, cố gắng lên nhé!
             </Text>
           </View>
 
@@ -199,7 +200,7 @@ export default function HomeScreen() {
         <View className="px-6 mt-6">
           <View className="flex-row justify-between items-center mb-4">
             <Text className="text-gray-900 text-2xl font-bold">
-              Bài học của bé
+              Bài học của bạn
             </Text>
             <TouchableOpacity onPress={handleSeeAll}>
               <Text className="text-teal-500 font-semibold text-base">
@@ -232,33 +233,33 @@ export default function HomeScreen() {
                   {/* Progress or Lock Badge */}
                   <View className="absolute top-3 right-3">
                     {lesson.unlocked ? (
-                      lesson.progress > 0 ? (
-                        <View
-                          className="w-10 h-10 rounded-full items-center justify-center border-2"
+                      <View
+                        className="px-2 py-1 rounded-full items-center justify-center border-2"
+                        style={{
+                          borderColor:
+                            lesson.achievedStars / lesson.maxStars >= 0.8
+                              ? "#10B981"
+                              : lesson.achievedStars / lesson.maxStars >= 0.4
+                                ? "#F59E0B"
+                                : "#E5E7EB",
+                          minWidth: 40,
+                          height: 40,
+                        }}
+                      >
+                        <Text
+                          className="text-[10px] font-black"
                           style={{
-                            borderColor:
-                              lesson.progress >= 80
+                            color:
+                              lesson.achievedStars / lesson.maxStars >= 0.8
                                 ? "#10B981"
-                                : lesson.progress >= 40
+                                : lesson.achievedStars / lesson.maxStars >= 0.4
                                   ? "#F59E0B"
-                                  : "#E5E7EB",
+                                  : "#9CA3AF",
                           }}
                         >
-                          <Text
-                            className="text-xs font-bold"
-                            style={{
-                              color:
-                                lesson.progress >= 80
-                                  ? "#10B981"
-                                  : lesson.progress >= 40
-                                    ? "#F59E0B"
-                                    : "#9CA3AF",
-                            }}
-                          >
-                            {lesson.progress}%
-                          </Text>
-                        </View>
-                      ) : null
+                          {lesson.achievedStars}/{lesson.maxStars}
+                        </Text>
+                      </View>
                     ) : (
                       <View className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center">
                         <Feather name="lock" size={14} color="#9CA3AF" />
@@ -279,7 +280,9 @@ export default function HomeScreen() {
                     {lesson.number}
                   </Text>
                   <Text
-                    className={`text-base font-bold ${lesson.unlocked ? "text-gray-900" : "text-gray-400"}`}
+                    className={`text-base font-bold ${
+                      lesson.unlocked ? "text-gray-900" : "text-gray-400"
+                    }`}
                     numberOfLines={1}
                   >
                     {lesson.title}
