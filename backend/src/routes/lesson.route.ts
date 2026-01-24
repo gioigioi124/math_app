@@ -8,8 +8,8 @@ import { protect } from "../middlewares/auth.middleware";
 
 const router = Router();
 
-router.get("/", protect, getLessons);
-router.get("/:id", protect, getLesson);
-router.get("/:id/questions", protect, getLessonQuestions);
+router.get("/", getLessons);
+router.get("/:id", getLesson);
+router.get("/:id/questions", getLessonQuestions);
 
 export default router;

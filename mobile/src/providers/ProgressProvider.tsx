@@ -145,8 +145,8 @@ export const ProgressProvider: React.FC<{ children: ReactNode }> = ({
       // Refresh stats
       await refreshStats();
 
-      // Sync to backend if logged in
-      if (user) {
+      // Sync to backend if logged in (not guest)
+      if (user && user.type === "user") {
         try {
           await apiService.updateProgress({
             lessonId,
@@ -235,8 +235,8 @@ export const ProgressProvider: React.FC<{ children: ReactNode }> = ({
       // Refresh stats
       await refreshStats();
 
-      // Sync to backend if logged in
-      if (user) {
+      // Sync to backend if logged in (not guest)
+      if (user && user.type === "user") {
         try {
           await apiService.updateProgress({
             lessonId,

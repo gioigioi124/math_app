@@ -12,6 +12,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useFocusEffect } from "expo-router";
 import { useUserStats } from "../hooks/useProgressHooks";
 import { getSelectedGrade } from "../services/progress.service";
+import { apiService } from "../services/api.service";
 
 export default function ProfileScreen() {
   const [grade, setGrade] = useState(1);
@@ -66,7 +67,7 @@ export default function ProfileScreen() {
   useFocusEffect(
     useCallback(() => {
       loadUserData();
-    }, [loadUserData])
+    }, [loadUserData]),
   );
 
   // `isGuest` đã được set trong loadUserData để tránh đọc AsyncStorage 2 lần
@@ -93,11 +94,25 @@ export default function ProfileScreen() {
             text: "OK",
             onPress: () => router.replace("/grade-selection"),
           },
-        ]
+        ],
       );
     } catch (e) {
       console.error("Error resetting app:", e);
       Alert.alert("Lỗi", "Không thể reset app");
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await apiService.logout();
+      Alert.alert("Đã đăng xuất!", "Bạn đã quay lại chế độ khách.", [
+        {
+          text: "OK",
+          onPress: () => router.replace("/grade-selection"),
+        },
+      ]);
+    } catch (e) {
+      console.error("Error logging out:", e);
     }
   };
 
@@ -242,6 +257,18 @@ export default function ProfileScreen() {
           <Feather name="refresh-cw" size={18} color="#6B7280" />
           <Text className="text-gray-600 font-bold ml-2">Thay đổi lớp học</Text>
         </TouchableOpacity>
+
+        {/* Logout Button - Show only for logged in users */}
+        {!isGuest && (
+          <TouchableOpacity
+            onPress={handleLogout}
+            activeOpacity={0.8}
+            className="bg-orange-50 rounded-3xl p-5 flex-row items-center justify-center border border-orange-100 mt-4"
+          >
+            <Feather name="log-out" size={18} color="#EA580C" />
+            <Text className="text-orange-600 font-bold ml-2">Đăng xuất</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Reset App - For Testing */}
         <TouchableOpacity
