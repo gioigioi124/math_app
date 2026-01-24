@@ -12,6 +12,7 @@ import { useLocalSearchParams, router } from "expo-router";
 import { getActivityById } from "../data/lessons.data";
 import { apiService } from "../services/api.service";
 import { Activity } from "../types/lesson.types";
+import { useActivityProgress } from "../hooks/useProgressHooks";
 
 export default function ActivityContentScreen() {
   const params = useLocalSearchParams();
@@ -19,6 +20,11 @@ export default function ActivityContentScreen() {
   const activityId = params.activityId as string;
   const isRetry = params.retry === "true";
   const autoStart = params.autoStart === "true";
+
+  const { markAsCompleted, markAsStarted } = useActivityProgress(
+    lessonId,
+    activityId,
+  );
 
   const [fadeAnim] = useState(new Animated.Value(0));
   const [scaleAnim] = useState(new Animated.Value(0.9));
@@ -29,6 +35,7 @@ export default function ActivityContentScreen() {
 
   useEffect(() => {
     loadActivityData();
+    markAsStarted();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -150,6 +157,7 @@ export default function ActivityContentScreen() {
         const accuracy = Math.round(
           ((isCorrect ? score + 1 : score) / questions.length) * 100,
         );
+        markAsCompleted(finalScore, accuracy);
         router.push(
           `/celebration?lessonId=${lessonId}&activityId=${activityId}&score=${finalScore}&accuracy=${accuracy}`,
         );
@@ -194,6 +202,7 @@ export default function ActivityContentScreen() {
               setCurrentQuestionIndex(currentQuestionIndex + 1);
               setMatchedIds([]);
             } else {
+              markAsCompleted(100, 100);
               router.push(
                 `/celebration?lessonId=${lessonId}&activityId=${activityId}&score=100&accuracy=100`,
               );
@@ -217,6 +226,7 @@ export default function ActivityContentScreen() {
     score,
     lessonId,
     activityId,
+    markAsCompleted,
   ]);
 
   const handleOrderSelect = (val: number) => {
@@ -240,6 +250,7 @@ export default function ActivityContentScreen() {
             setOrderedValues([]);
             setCurrentOrderIndex(0);
           } else {
+            markAsCompleted(100, 100);
             router.push(
               `/celebration?lessonId=${lessonId}&activityId=${activityId}&score=100&accuracy=100`,
             );

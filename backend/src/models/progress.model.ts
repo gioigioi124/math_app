@@ -13,10 +13,24 @@ const progressSchema = new mongoose.Schema(
       enum: ["locked", "available", "completed"],
       default: "locked",
     },
-    score: { type: Number, default: 0 },
+    activities: [
+      {
+        activityId: { type: String, required: true },
+        status: {
+          type: String,
+          enum: ["locked", "not-started", "in-progress", "completed"],
+        },
+        score: { type: Number },
+        accuracy: { type: Number },
+        stars: { type: Number, default: 0 },
+        completedAt: { type: Date },
+      },
+    ],
+    score: { type: Number, default: 0 }, // average or total score
+    stars: { type: Number, default: 0 }, // total stars for this lesson
     completedAt: { type: Date },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export const Progress = mongoose.model("Progress", progressSchema);

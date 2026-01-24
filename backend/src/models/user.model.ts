@@ -26,6 +26,7 @@ const userSchema = new mongoose.Schema(
     coins: { type: Number, default: 0 },
     xp: { type: Number, default: 0 },
     level: { type: Number, default: 1 },
+    totalStars: { type: Number, default: 0 },
   },
   { timestamps: true },
 );

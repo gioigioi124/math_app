@@ -208,6 +208,20 @@ class ApiService {
     const query = activityId ? `?activityId=${activityId}` : "";
     return this.request<any[]>(`/lessons/${lessonId}/questions${query}`);
   }
+
+  async updateProgress(data: {
+    lessonId: string;
+    activityId?: string;
+    status: string;
+    score?: number;
+    accuracy?: number;
+    stars?: number;
+  }): Promise<any> {
+    return this.request<any>("/progress/update", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
 }
 
 export const apiService = new ApiService();

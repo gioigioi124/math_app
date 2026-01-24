@@ -293,6 +293,9 @@ export const calculateUserStats = async (): Promise<UserStats> => {
           totalScore += activity.score;
           scoreCount++;
         }
+        if (activity.stars !== undefined) {
+          totalStarsEarned += activity.stars;
+        }
       }
     }
 

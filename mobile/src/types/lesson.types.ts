@@ -61,6 +61,7 @@ export interface ActivityProgress {
   status: ActivityStatus;
   score?: number;
   accuracy?: number;
+  stars?: number; // 0-3 stars
   completedAt?: string;
   attempts: number;
 }

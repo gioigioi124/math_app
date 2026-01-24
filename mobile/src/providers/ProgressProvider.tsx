@@ -18,6 +18,7 @@ import {
   updateUserStats,
   UserStats,
 } from "../services/progress.service";
+import { apiService } from "../services/api.service";
 
 interface ProgressContextType {
   // Lesson Progress
@@ -138,6 +139,18 @@ export const ProgressProvider: React.FC<{ children: ReactNode }> = ({
 
       // Refresh stats
       await refreshStats();
+
+      // Sync to backend if logged in
+      if (user) {
+        try {
+          await apiService.updateProgress({
+            lessonId,
+            status: progress === 100 ? "completed" : "available",
+          });
+        } catch (error) {
+          console.error("Failed to sync lesson progress to backend:", error);
+        }
+      }
     } catch (error) {
       console.error("Failed to update lesson progress:", error);
     }
@@ -163,14 +176,32 @@ export const ProgressProvider: React.FC<{ children: ReactNode }> = ({
     try {
       const existing = getActivityProgressById(lessonId, activityId);
 
+      // Calculate stars based on score
+      const earnedStars =
+        score !== undefined
+          ? score >= 90
+            ? 3
+            : score >= 70
+              ? 2
+              : score >= 50
+                ? 1
+                : 0
+          : 0;
+      const existingStars = existing?.stars || 0;
+      const finalStars = Math.max(existingStars, earnedStars);
+      const starDiff = finalStars - existingStars;
+
       const newProgress: ActivityProgress = {
         activityId,
         lessonId,
         status,
         score,
         accuracy,
+        stars: finalStars,
         completedAt:
-          status === "completed" ? new Date().toISOString() : undefined,
+          status === "completed"
+            ? new Date().toISOString()
+            : existing?.completedAt,
         attempts: (existing?.attempts || 0) + 1,
       };
 
@@ -183,11 +214,37 @@ export const ProgressProvider: React.FC<{ children: ReactNode }> = ({
       newMap.set(key, newProgress);
       setActivityProgressMap(newMap);
 
+      // Update user stats with new stars if any
+      if (starDiff > 0 && userStats) {
+        const updatedStats = {
+          ...userStats,
+          totalStarsEarned: (userStats.totalStarsEarned || 0) + starDiff,
+        };
+        setUserStats(updatedStats);
+        await updateUserStats(updatedStats);
+      }
+
       // Update lesson progress based on activities
       await updateLessonProgressFromActivities(lessonId);
 
       // Refresh stats
       await refreshStats();
+
+      // Sync to backend if logged in
+      if (user) {
+        try {
+          await apiService.updateProgress({
+            lessonId,
+            activityId,
+            status,
+            score,
+            accuracy,
+            stars: finalStars,
+          });
+        } catch (error) {
+          console.error("Failed to sync activity progress to backend:", error);
+        }
+      }
     } catch (error) {
       console.error("Failed to update activity progress:", error);
     }

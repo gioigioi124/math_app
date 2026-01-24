@@ -11,11 +11,35 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { apiService } from "../services/api.service";
 import { Lesson } from "../types/lesson.types";
+import { useProgress } from "../providers/ProgressProvider";
 
 export default function LessonListScreen() {
+  const { lessonProgressMap, activityProgressMap } = useProgress();
   const [grade, setGrade] = useState(1);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const lessonsWithProgress = lessons.map((lesson) => {
+    const prog = lessonProgressMap.get(lesson.id);
+    let totalStars = 0;
+    let activityCount = 0;
+
+    activityProgressMap.forEach((actProg) => {
+      if (actProg.lessonId === lesson.id) {
+        totalStars += actProg.stars || 0;
+        activityCount++;
+      }
+    });
+
+    const lessonStars =
+      activityCount > 0 ? Math.floor(totalStars / activityCount) : 0;
+
+    return {
+      ...lesson,
+      progress: prog?.progress || 0,
+      stars: lessonStars,
+    };
+  });
 
   useEffect(() => {
     loadData();
@@ -96,14 +120,14 @@ export default function LessonListScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingVertical: 16, paddingHorizontal: 16 }}
         >
-          {lessons.length === 0 ? (
+          {lessonsWithProgress.length === 0 ? (
             <View className="items-center justify-center py-20">
               <Text className="text-gray-500 text-base">
                 Chưa có bài học nào cho lớp này.
               </Text>
             </View>
           ) : (
-            lessons.map((lesson) => (
+            lessonsWithProgress.map((lesson) => (
               <TouchableOpacity
                 key={lesson.id}
                 onPress={() => handleLessonPress(lesson)}

@@ -163,8 +163,15 @@ Phase 3 mở ra khả năng:
 
 - [x] **Phase 7A**: Connect auth to backend (Login)
 - [x] **Phase 7B**: Connect auth to backend (SignUp)
-- [ ] **Phase 7C**: Sync progress to server
+- [x] **Phase 7C**: Sync progress to server & Star System
 - [ ] **Phase 7D**: Load leaderboard from API
+
+**Phase 7C Completed:**
+
+- ✨ Hệ thống tặng sao (0-3 sao) dựa trên điểm số (50/70/90)
+- ✨ Lưu lại số lượng sao cao nhất cho từng bài tập (làm lại được điểm cao hơn sẽ cộng thêm sao)
+- ✨ Đồng bộ tiến độ và số sao lên Backend
+- ✨ Cập nhật tổng số sao trong Profile và hiển thị trong danh sách bài học
 
 **Phase 7A & 7B Completed:**
 

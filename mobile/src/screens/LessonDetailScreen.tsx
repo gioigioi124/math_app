@@ -12,6 +12,22 @@ import { useLocalSearchParams, router } from "expo-router";
 import { apiService } from "../services/api.service";
 import { Lesson, Activity } from "../types/lesson.types";
 import { useLessonProgress } from "../hooks/useProgressHooks";
+import { useProgress } from "../providers/ProgressProvider";
+
+const renderStars = (stars: number = 0) => {
+  return (
+    <View className="flex-row mt-1">
+      {[1, 2, 3].map((i) => (
+        <Text
+          key={i}
+          className={`text-sm ${stars >= i ? "opacity-100" : "opacity-30"}`}
+        >
+          ⭐
+        </Text>
+      ))}
+    </View>
+  );
+};
 
 export default function LessonDetailScreen() {
   const params = useLocalSearchParams();
@@ -23,6 +39,20 @@ export default function LessonDetailScreen() {
   const [slideAnim] = useState(new Animated.Value(50));
 
   const { progressPercent, completedActivities } = useLessonProgress(lessonId);
+  const { activityProgressMap } = useProgress();
+
+  const activities =
+    lessonData?.activities.map((act) => {
+      const key = `${lessonId}_${act.id}`;
+      const prog = activityProgressMap.get(key);
+      return {
+        ...act,
+        status: prog?.status || act.status,
+        score: prog?.score || act.score,
+        accuracy: prog?.accuracy || act.accuracy,
+        stars: prog?.stars || 0,
+      };
+    }) || [];
 
   useEffect(() => {
     loadLessonData();
@@ -231,7 +261,7 @@ export default function LessonDetailScreen() {
 
         {/* Activities List */}
         <View className="px-4">
-          {lessonData.activities.map((activity, index) => (
+          {activities.map((activity, index) => (
             <Animated.View
               key={activity.id}
               style={{
@@ -346,6 +376,8 @@ export default function LessonDetailScreen() {
                           )}
                         </View>
                       )}
+                    {activity.status === "completed" &&
+                      renderStars(activity.stars)}
                   </View>
 
                   {/* Action Button */}
